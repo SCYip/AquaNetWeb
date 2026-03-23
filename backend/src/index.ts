@@ -16,7 +16,7 @@ const corsOrigins = process.env.CORS_ORIGINS?.split(',') || ['http://localhost:5
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin || corsOrigins.some(o => origin.startsWith(o.trim()))) {
+    if (!origin || corsOrigins.some(o => origin === o.trim())) {
       callback(null, true)
     } else {
       callback(new Error('Not allowed by CORS'))

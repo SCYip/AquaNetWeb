@@ -11,15 +11,32 @@ const app = express()
 const PORT = process.env.PORT || 3000
 
 // CORS
-const corsOrigins = process.env.CORS_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:5174']
+const corsOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:5174')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean)
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin || corsOrigins.some(o => origin.startsWith(o.trim()))) {
+    // Allow requests with no origin (mobile apps, curl, Postman, etc.)
+    if (!origin) {
+      return callback(null, true)
+    }
+
+    // Allow exact matches or subdomain matching
+    const isAllowed = corsOrigins.some(allowed => {
+      const allowedUrl = new URL(allowed)
+      const originUrl = new URL(origin)
+      return (
+        origin === allowed ||
+        (originUrl.hostname === allowedUrl.hostname && originUrl.protocol === allowedUrl.protocol)
+      )
+    })
+
+    if (isAllowed) {
       callback(null, true)
     } else {
-      callback(new Error('Not allowed by CORS'))
+      callback(new Error(`CORS: origin ${origin} not allowed. Allowed: ${corsOrigins.join(', ')}`))
     }
   },
   credentials: true,

@@ -7,16 +7,14 @@
 
 # ── Environment variables injected at deploy time ──────────────────────────
 # Netlify CDN serves the frontend; the browser calls the API at this URL.
-# DNS not yet configured → using Aliyun IP directly.
-# TODO: once DNS propagates, change to https://api.aquanet-water.org/api
 [context.production.environment]
-  VITE_API_URL = "https://8.135.45.252/api"
+  VITE_API_URL = "https://api.aquanet-water.org/api"
 
 [context.deploy-preview.environment]
-  VITE_API_URL = "https://8.135.45.252/api"
+  VITE_API_URL = "https://api.aquanet-water.org/api"
 
 [context.branch-deploy.environment]
-  VITE_API_URL = "https://8.135.45.252/api"
+  VITE_API_URL = "https://api.aquanet-water.org/api"
 
 # ── SPA routing ────────────────────────────────────────────────────────────
 [[redirects]]

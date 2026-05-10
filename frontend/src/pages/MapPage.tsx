@@ -7,7 +7,6 @@ import {
   Droplet,
   Waves as WavesIcon,
   Radio,
-  ArrowUpRight,
 } from 'lucide-react'
 import L from 'leaflet'
 import type { BuoyRow } from '../lib/types'
@@ -219,12 +218,15 @@ export const MapPage = () => {
               zoom={11}
               minZoom={8}
               maxZoom={18}
+              zoomSnap={0.25}
+              zoomDelta={0.5}
               className="h-[68vh] min-h-[480px] w-full"
               zoomControl
               scrollWheelZoom
-              wheelDebounceTime={40}
-              wheelPxPerZoomLevel={120}
+              wheelDebounceTime={20}
+              wheelPxPerZoomLevel={80}
               dragging
+              inertia
               doubleClickZoom
               touchZoom
             >
@@ -248,56 +250,66 @@ export const MapPage = () => {
                       <span className="aq-tooltip__name">{b.name}</span>
                       <span className="aq-tooltip__code">{b.code || b.id.slice(0, 8)}</span>
                     </Tooltip>
-                    <Popup className="aq-popup" maxWidth={320} minWidth={280}>
+                    <Popup className="aq-popup" maxWidth={360} minWidth={320}>
                       <div className="aq-popup-inner">
-                        <div className="flex items-baseline justify-between border-b border-ocean-200 pb-2 mb-3">
-                          <span className="mono-label text-sea-700 inline-flex items-center gap-1.5">
+                        {/* Header strip — full-width row, code on its own line */}
+                        <div className="aq-popup__head">
+                          <span className="aq-popup__kicker">
                             <Radio className="w-3 h-3" strokeWidth={2.2} />
                             BUOY · 浮标
                           </span>
-                          <span className="mono-label-sm text-ocean-500 tabular-nums">
+                          <span className="aq-popup__code">
                             {b.code || b.id.slice(0, 8)}
                           </span>
                         </div>
 
-                        <h3 className="font-heading text-2xl text-ocean-950 leading-[1.1] mb-1">
-                          {b.name}
-                        </h3>
-                        <p className="mono-label-sm text-ocean-500 tabular-nums mb-4">
+                        {/* Title block */}
+                        <h3 className="aq-popup__name">{b.name}</h3>
+                        <p className="aq-popup__coords">
                           {b.lat?.toFixed(4)}°N · {b.lng?.toFixed(4)}°E
                         </p>
 
-                        <dl className="space-y-2.5 mb-4">
+                        {/* Telemetry — fixed grid, never wraps */}
+                        <dl className="aq-popup__readings">
                           <Reading
                             icon={<Thermometer className="w-3.5 h-3.5" strokeWidth={1.8} />}
-                            label="水温 · TEMP"
-                            value={fmt(b.temp, 1, ' °C')}
+                            label="水温"
+                            sub="TEMP"
+                            value={fmt(b.temp, 1)}
+                            unit="°C"
                           />
                           <Reading
                             icon={<Droplet className="w-3.5 h-3.5" strokeWidth={1.8} />}
-                            label="酸碱度 · pH"
+                            label="酸碱度"
+                            sub="pH"
                             value={fmt(b.ph, 2)}
                           />
                           <Reading
                             icon={<WavesIcon className="w-3.5 h-3.5" strokeWidth={1.8} />}
-                            label="浊度 · TURB"
-                            value={fmt(b.turbidity, 1, ' NTU')}
+                            label="浊度"
+                            sub="TURB"
+                            value={fmt(b.turbidity, 1)}
+                            unit="NTU"
                             warn={b.turbidity !== null && Number(b.turbidity) > 15}
                           />
                         </dl>
 
-                        <div className="border-t border-ocean-200 pt-3 mb-3">
-                          <div className="flex items-center justify-between mono-label-sm text-ocean-500">
-                            <span>LAST UPDATED</span>
-                            <span className="text-ocean-800">{formatRelative(b.updated_at)}</span>
-                          </div>
+                        {/* Last updated — single row */}
+                        <div className="aq-popup__updated">
+                          <span>LAST UPDATED · 上次更新</span>
+                          <span className="aq-popup__updated-val">
+                            {formatRelative(b.updated_at)}
+                          </span>
                         </div>
 
-                        <div className="flex items-center justify-between">
-                          <ExportButton variant="single" buoy={b} size="sm" />
-                          <span className="mono-label-sm text-ocean-400 inline-flex items-center gap-1">
-                            CSV <ArrowUpRight className="w-3 h-3" strokeWidth={2} />
-                          </span>
+                        {/* Action — single button, full width */}
+                        <div className="aq-popup__actions">
+                          <ExportButton
+                            variant="single"
+                            buoy={b}
+                            size="sm"
+                            className="w-full justify-center"
+                          />
                         </div>
                       </div>
                     </Popup>
@@ -350,18 +362,22 @@ export const MapPage = () => {
 interface ReadingProps {
   icon: React.ReactNode
   label: string
+  sub: string
   value: string
+  unit?: string
   warn?: boolean
 }
 
-const Reading = ({ icon, label, value, warn }: ReadingProps) => (
-  <div className="flex items-baseline justify-between border-b border-dotted border-ocean-200 pb-2 last:border-0 last:pb-0">
-    <dt className="mono-label-sm text-ocean-600 inline-flex items-center gap-1.5">
-      <span className={warn ? 'text-[#a24b29]' : 'text-ocean-700'}>{icon}</span>
-      {label}
-    </dt>
-    <dd className={`font-heading tabular-nums text-base ${warn ? 'text-[#a24b29]' : 'text-ocean-950'}`}>
+const Reading = ({ icon, label, sub, value, unit, warn }: ReadingProps) => (
+  <div className={`aq-reading ${warn ? 'aq-reading--warn' : ''}`}>
+    <span className="aq-reading__icon">{icon}</span>
+    <span className="aq-reading__label">
+      <span className="aq-reading__zh">{label}</span>
+      <span className="aq-reading__en">{sub}</span>
+    </span>
+    <span className="aq-reading__value">
       {value}
-    </dd>
+      {unit && <span className="aq-reading__unit">{unit}</span>}
+    </span>
   </div>
 )

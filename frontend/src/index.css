@@ -151,6 +151,41 @@
   font-family: 'DM Sans', system-ui, sans-serif;
 }
 
+/* — Permanent marker tooltip → little stationery tag floating above pin — */
+.leaflet-tooltip.aq-tooltip {
+  background: #f4eee2;
+  color: #07171f;
+  border: 1px solid #082034;
+  border-radius: 0;
+  box-shadow: 0 8px 20px -10px rgba(8, 24, 40, 0.45);
+  padding: 6px 10px;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 0.78rem;
+  line-height: 1.15;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.leaflet-tooltip.aq-tooltip::before {
+  border-top-color: #082034;
+}
+.aq-tooltip__name {
+  display: block;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: #07171f;
+  letter-spacing: 0.005em;
+}
+.aq-tooltip__code {
+  display: block;
+  font-family: 'JetBrains Mono', Menlo, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #4a8a9d;
+  margin-top: 2px;
+}
+
 /* — Editorial input · used by LoginPage / DevicesPage forms — */
 .aq-input {
   width: 100%;

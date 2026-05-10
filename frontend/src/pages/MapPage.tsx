@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet'
 import {
   Loader2,
   RefreshCw,
@@ -13,14 +13,17 @@ import L from 'leaflet'
 import type { BuoyRow } from '../lib/types'
 import { getDeployedBuoys } from '../services/buoyService'
 import { ExportButton } from '../components/ExportButton'
-import '../lib/smoothWheelZoom'
 
 /* ────────────────────────────────────────────────────────────────────────────
  * MapPage — 实时地图 · LIVE FIELD MAP
  *
- * Field Bulletin treatment for the live buoy map. Click a marker to open a
- * stationery-style popup with full telemetry; the wheel zoom is handled by
- * our momentum-based smoothWheelZoom plugin instead of Leaflet's default.
+ * Field Bulletin treatment for the live buoy map. The map auto-fits to all
+ * deployed buoys on load; each marker carries a permanent tooltip with its
+ * name so the fleet is readable at a glance. Click a marker for a stationery
+ * popup with full telemetry.
+ *
+ * Wheel zoom is intentionally disabled — page scroll is the priority on a
+ * long-form layout. Use the +/- buttons (or pinch on touch) to zoom.
  *
  * Telemetry fields are nullable in the schema, so any missing reading is
  * rendered as an em-dash rather than "0".
@@ -46,7 +49,26 @@ const buoyIcon = L.divIcon({
   iconSize: [38, 38],
   iconAnchor: [19, 19],
   popupAnchor: [0, -18],
+  tooltipAnchor: [0, -14],
 })
+
+/* Auto-fit the viewport to every deployed buoy when the list changes. */
+const FitBoundsToBuoys = ({ buoys }: { buoys: BuoyRow[] }) => {
+  const map = useMap()
+  useEffect(() => {
+    const points = buoys
+      .filter((b): b is BuoyRow & { lat: number; lng: number } => b.lat !== null && b.lng !== null)
+      .map((b) => [b.lat, b.lng] as [number, number])
+    if (points.length === 0) return
+    if (points.length === 1) {
+      map.setView(points[0], 13, { animate: false })
+      return
+    }
+    const bounds = L.latLngBounds(points)
+    map.fitBounds(bounds, { padding: [60, 60], maxZoom: 13, animate: false })
+  }, [buoys, map])
+  return null
+}
 
 function fmt(v: number | null | undefined, digits = 1, suffix = ''): string {
   if (v === null || v === undefined || Number.isNaN(Number(v))) return '—'
@@ -194,22 +216,35 @@ export const MapPage = () => {
             <MapContainer
               center={SHENZHEN_CENTER}
               zoom={11}
-              minZoom={9}
+              minZoom={8}
               maxZoom={18}
               className="h-[68vh] min-h-[480px] w-full"
               zoomControl
               scrollWheelZoom={false}
-              smoothWheelZoom={true}
-              smoothSensitivity={1}
+              dragging
+              doubleClickZoom
+              touchZoom
             >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
               />
 
+              <FitBoundsToBuoys buoys={buoys} />
+
               {buoys.map((b) =>
                 b.lat !== null && b.lng !== null ? (
                   <Marker key={b.id} position={[b.lat, b.lng]} icon={buoyIcon}>
+                    <Tooltip
+                      direction="top"
+                      offset={[0, -16]}
+                      opacity={1}
+                      permanent
+                      className="aq-tooltip"
+                    >
+                      <span className="aq-tooltip__name">{b.name}</span>
+                      <span className="aq-tooltip__code">{b.code || b.id.slice(0, 8)}</span>
+                    </Tooltip>
                     <Popup className="aq-popup" maxWidth={320} minWidth={280}>
                       <div className="aq-popup-inner">
                         <div className="flex items-baseline justify-between border-b border-ocean-200 pb-2 mb-3">

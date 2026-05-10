@@ -33,13 +33,12 @@ export const register = async (
       return
     }
 
-    // Check if user exists
-    const [existing] = await pool.execute(
-      'SELECT id FROM users WHERE email = ?',
+    const existing = await pool.query(
+      'SELECT id FROM users WHERE email = $1',
       [email]
     )
 
-    if ((existing as User[]).length > 0) {
+    if (existing.rows.length > 0) {
       res.status(400).json({
         success: false,
         error: 'Email already registered',
@@ -47,13 +46,11 @@ export const register = async (
       return
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10)
     const userId = uuidv4()
 
-    // Create user
-    await pool.execute(
-      'INSERT INTO users (id, email, name, password, auth_type) VALUES (?, ?, ?, ?, ?)',
+    await pool.query(
+      'INSERT INTO users (id, email, name, password, auth_type) VALUES ($1, $2, $3, $4, $5)',
       [userId, email, name, hashedPassword, 'email']
     )
 
@@ -95,13 +92,12 @@ export const login = async (
       return
     }
 
-    // Find user
-    const [rows] = await pool.execute(
-      'SELECT * FROM users WHERE email = ? AND auth_type = ?',
+    const result = await pool.query(
+      'SELECT * FROM users WHERE email = $1 AND auth_type = $2',
       [email, 'email']
     )
 
-    const users = rows as User[]
+    const users = result.rows as User[]
 
     if (users.length === 0) {
       res.status(401).json({
@@ -113,7 +109,6 @@ export const login = async (
 
     const user = users[0]
 
-    // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password || '')
 
     if (!isValidPassword) {
@@ -154,12 +149,12 @@ export const getProfile = async (
   try {
     const userId = (req as Request & { user: JwtPayload }).user.id
 
-    const [rows] = await pool.execute(
-      'SELECT id, email, phone, name, auth_type, created_at FROM users WHERE id = ?',
+    const result = await pool.query(
+      'SELECT id, email, phone, name, auth_type, created_at FROM users WHERE id = $1',
       [userId]
     )
 
-    const users = rows as User[]
+    const users = result.rows as User[]
 
     if (users.length === 0) {
       res.status(404).json({
@@ -197,7 +192,6 @@ export const phoneLoginSendCode = async (
       return
     }
 
-    // Validate phone format (basic)
     const phoneRegex = /^[\d]{10,15}$/
     if (!phoneRegex.test(phone.replace(/[\s-]/g, ''))) {
       res.status(400).json({
@@ -207,18 +201,15 @@ export const phoneLoginSendCode = async (
       return
     }
 
-    // Generate 6-digit code
     const code = Math.floor(100000 + Math.random() * 900000).toString()
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
 
-    // Store code
     const codeId = uuidv4()
-    await pool.execute(
-      'INSERT INTO sms_codes (id, phone, code, expires_at) VALUES (?, ?, ?, ?)',
+    await pool.query(
+      'INSERT INTO sms_codes (id, phone, code, expires_at) VALUES ($1, $2, $3, $4)',
       [codeId, phone, code, expiresAt]
     )
 
-    // Send SMS via Alibaba Cloud
     const smsConfig = {
       accessKeyId: process.env.ALIYUN_ACCESS_KEY_ID || '',
       accessKeySecret: process.env.ALIYUN_ACCESS_KEY_SECRET || '',
@@ -227,10 +218,8 @@ export const phoneLoginSendCode = async (
     }
 
     const smsResult = await sendSms(phone, code, smsConfig)
-
-    // In development mode, return the code in response
     const isDev = process.env.NODE_ENV === 'development'
-    
+
     res.json({
       success: true,
       message: isDev ? `Verification code: ${code}` : smsResult.message,
@@ -260,13 +249,12 @@ export const phoneLoginVerify = async (
       return
     }
 
-    // Find valid code
-    const [rows] = await pool.execute(
-      'SELECT * FROM sms_codes WHERE phone = ? AND code = ? AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1',
+    const result = await pool.query(
+      'SELECT * FROM sms_codes WHERE phone = $1 AND code = $2 AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1',
       [phone, code]
     )
 
-    const codes = rows as { id: string; phone: string }[]
+    const codes = result.rows as { id: string; phone: string }[]
 
     if (codes.length === 0) {
       res.status(401).json({
@@ -276,25 +264,22 @@ export const phoneLoginVerify = async (
       return
     }
 
-    // Delete used code
-    await pool.execute('DELETE FROM sms_codes WHERE id = ?', [codes[0].id])
+    await pool.query('DELETE FROM sms_codes WHERE id = $1', [codes[0].id])
 
-    // Find or create user
-    const [existing] = await pool.execute(
-      'SELECT * FROM users WHERE phone = ?',
+    const existing = await pool.query(
+      'SELECT * FROM users WHERE phone = $1',
       [phone]
     )
 
     let user: User
-    const existingUsers = existing as User[]
+    const existingUsers = existing.rows as User[]
 
     if (existingUsers.length > 0) {
       user = existingUsers[0]
     } else {
-      // Create new user with phone
       const userId = uuidv4()
-      await pool.execute(
-        'INSERT INTO users (id, phone, name, auth_type) VALUES (?, ?, ?, ?)',
+      await pool.query(
+        'INSERT INTO users (id, phone, name, auth_type) VALUES ($1, $2, $3, $4)',
         [userId, phone, `User${phone.slice(-4)}`, 'phone']
       )
       user = {
@@ -302,9 +287,9 @@ export const phoneLoginVerify = async (
         phone,
         name: `User${phone.slice(-4)}`,
         auth_type: 'phone',
-        email: null,
-        password: null,
-        wechat_openid: null,
+        email: undefined,
+        password: undefined,
+        wechat_openid: undefined,
         created_at: new Date(),
         updated_at: new Date(),
       }
@@ -348,8 +333,6 @@ export const wechatLogin = async (
       return
     }
 
-    // Exchange code for WeChat access token
-    // This is a simplified version - in production, call WeChat API
     const wechatAppId = process.env.WECHAT_APP_ID
     const wechatAppSecret = process.env.WECHAT_APP_SECRET
 
@@ -386,19 +369,17 @@ export const wechatLogin = async (
       return
     }
 
-    // Find or create user
-    const [existing] = await pool.execute(
-      'SELECT * FROM users WHERE wechat_openid = ?',
+    const existing = await pool.query(
+      'SELECT * FROM users WHERE wechat_openid = $1',
       [openid]
     )
 
     let user: User
-    const existingUsers = existing as User[]
+    const existingUsers = existing.rows as User[]
 
     if (existingUsers.length > 0) {
       user = existingUsers[0]
     } else {
-      // Get user info from WeChat
       const userInfoResponse = await fetch(
         `https://api.weixin.qq.com/sns/userinfo?access_token=${accessToken}&openid=${openid}`
       )
@@ -407,8 +388,8 @@ export const wechatLogin = async (
       const userId = uuidv4()
       const name = userInfo.nickname || `WeChat User`
 
-      await pool.execute(
-        'INSERT INTO users (id, name, wechat_openid, auth_type) VALUES (?, ?, ?, ?)',
+      await pool.query(
+        'INSERT INTO users (id, name, wechat_openid, auth_type) VALUES ($1, $2, $3, $4)',
         [userId, name, openid, 'wechat']
       )
 
@@ -417,9 +398,9 @@ export const wechatLogin = async (
         name,
         wechat_openid: openid,
         auth_type: 'wechat',
-        email: null,
-        phone: null,
-        password: null,
+        email: undefined,
+        phone: undefined,
+        password: undefined,
         created_at: new Date(),
         updated_at: new Date(),
       }

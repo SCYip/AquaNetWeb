@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Mail, MapPin, Phone, Send, CheckCircle } from 'lucide-react'
+import { Mail, MapPin, Send, CheckCircle, Phone } from 'lucide-react'
 
 export const ContactPage = () => {
   const [formData, setFormData] = useState({
@@ -13,7 +13,6 @@ export const ContactPage = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Simulate form submission
     setIsSubmitted(true)
     setTimeout(() => {
       setIsSubmitted(false)
@@ -26,54 +25,53 @@ export const ContactPage = () => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 animate-in fade-in duration-500">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 animate-fade-in">
       {/* Header */}
       <div className="text-center mb-12">
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">Get in Touch</h2>
-        <p className="text-gray-600 max-w-2xl mx-auto">
-          Interested in deploying AquaNet in your city? Have questions about our technology? 
-          We'd love to hear from you.
+        <h2 className="text-3xl font-heading font-bold text-ocean-900 mb-3">联系我们</h2>
+        <p className="text-ocean-600 max-w-2xl mx-auto">
+          想在深圳或您的城市部署 AquaNet？对我们的技术有疑问？我们很乐意听到您的声音。
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         {/* Contact Info */}
-        <div className="space-y-8">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <div className="space-y-5">
+          <div className="bg-white p-6 rounded-2xl shadow-soft border border-ocean-100/60">
             <div className="flex items-start gap-4">
-              <div className="bg-cyan-100 p-3 rounded-lg">
-                <Mail className="w-6 h-6 text-cyan-600" />
+              <div className="w-10 h-10 rounded-xl bg-sea-100 flex items-center justify-center flex-shrink-0">
+                <Mail className="w-5 h-5 text-sea-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Email</h3>
-                <p className="text-gray-600 mt-1">contact@aquanet.io</p>
-                <p className="text-gray-500 text-sm">We reply within 24 hours</p>
+                <h3 className="font-semibold text-ocean-900 text-sm">邮箱</h3>
+                <p className="text-ocean-600 mt-1 text-sm">contact@aquanet.io</p>
+                <p className="text-ocean-400 text-xs mt-0.5">24小时内回复</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="bg-white p-6 rounded-2xl shadow-soft border border-ocean-100/60">
             <div className="flex items-start gap-4">
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <MapPin className="w-6 h-6 text-blue-600" />
+              <div className="w-10 h-10 rounded-xl bg-ocean-100 flex items-center justify-center flex-shrink-0">
+                <MapPin className="w-5 h-5 text-ocean-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Address</h3>
-                <p className="text-gray-600 mt-1">Shenzhen, Guangdong</p>
-                <p className="text-gray-500 text-sm">People's Republic of China</p>
+                <h3 className="font-semibold text-ocean-900 text-sm">所在地</h3>
+                <p className="text-ocean-600 mt-1 text-sm">广东深圳</p>
+                <p className="text-ocean-400 text-xs mt-0.5">中华人民共和国</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="bg-white p-6 rounded-2xl shadow-soft border border-ocean-100/60">
             <div className="flex items-start gap-4">
-              <div className="bg-teal-100 p-3 rounded-lg">
-                <Phone className="w-6 h-6 text-teal-600" />
+              <div className="w-10 h-10 rounded-xl bg-sand-100 flex items-center justify-center flex-shrink-0">
+                <Phone className="w-5 h-5 text-sand-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Phone</h3>
-                <p className="text-gray-600 mt-1">+86 755 XXXX XXXX</p>
-                <p className="text-gray-500 text-sm">Mon-Fri, 9am-6pm CST</p>
+                <h3 className="font-semibold text-ocean-900 text-sm">电话</h3>
+                <p className="text-ocean-600 mt-1 text-sm">+86 755 XXXX XXXX</p>
+                <p className="text-ocean-400 text-xs mt-0.5">周一至周五 9:00-18:00</p>
               </div>
             </div>
           </div>
@@ -81,37 +79,39 @@ export const ContactPage = () => {
 
         {/* Contact Form */}
         <div className="lg:col-span-2">
-          <div className="bg-white p-8 md:p-12 rounded-2xl shadow-xl border border-gray-100">
+          <div className="bg-white p-8 md:p-10 rounded-2xl shadow-lifted border border-ocean-100/60">
             {isSubmitted ? (
-              <div className="text-center py-12 animate-in fade-in duration-300">
-                <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Message Sent!</h3>
-                <p className="text-gray-600">We'll get back to you within 24 hours.</p>
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-sea-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-sea-500" />
+                </div>
+                <h3 className="text-2xl font-heading font-bold text-ocean-900 mb-2">消息已发送！</h3>
+                <p className="text-ocean-600">我们会在24小时内回复您。</p>
               </div>
             ) : (
               <>
-                <h3 className="text-2xl font-bold text-gray-900 mb-6">Send us a message</h3>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <h3 className="text-xl font-heading font-bold text-ocean-900 mb-6">发送消息</h3>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                      <label className="block text-sm font-medium text-ocean-800 mb-1.5">名字</label>
                       <input
                         type="text"
                         name="firstName"
                         required
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                        className="input-field"
                         placeholder="Jane"
                         value={formData.firstName}
                         onChange={handleChange}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                      <label className="block text-sm font-medium text-ocean-800 mb-1.5">姓氏</label>
                       <input
                         type="text"
                         name="lastName"
                         required
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                        className="input-field"
                         placeholder="Doe"
                         value={formData.lastName}
                         onChange={handleChange}
@@ -120,12 +120,12 @@ export const ContactPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                    <label className="block text-sm font-medium text-ocean-800 mb-1.5">邮箱地址</label>
                     <input
                       type="email"
                       name="email"
                       required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                      className="input-field"
                       placeholder="jane@example.com"
                       value={formData.email}
                       onChange={handleChange}
@@ -133,31 +133,31 @@ export const ContactPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                    <label className="block text-sm font-medium text-ocean-800 mb-1.5">主题</label>
                     <select
                       name="subject"
                       required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                      className="input-field"
                       value={formData.subject}
                       onChange={handleChange}
                     >
-                      <option value="">Select a topic</option>
-                      <option value="deployment">Deploy AquaNet in my area</option>
-                      <option value="partnership">Business Partnership</option>
-                      <option value="technical">Technical Support</option>
-                      <option value="media">Media Inquiry</option>
-                      <option value="other">Other</option>
+                      <option value="">选择主题</option>
+                      <option value="deployment">在我的区域部署 AquaNet</option>
+                      <option value="partnership">商业合作</option>
+                      <option value="technical">技术支持</option>
+                      <option value="media">媒体咨询</option>
+                      <option value="other">其他</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                    <label className="block text-sm font-medium text-ocean-800 mb-1.5">留言</label>
                     <textarea
                       name="message"
                       rows={5}
                       required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                      placeholder="How can we help you?"
+                      className="input-field"
+                      placeholder="请告诉我们如何帮助您..."
                       value={formData.message}
                       onChange={handleChange}
                     />
@@ -165,10 +165,10 @@ export const ContactPage = () => {
 
                   <button
                     type="submit"
-                    className="bg-blue-900 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-800 transition-colors flex items-center justify-center w-full md:w-auto"
+                    className="btn-primary text-base px-8 py-3 shadow-md"
                   >
-                    <Send className="w-5 h-5 mr-2" />
-                    Send Message
+                    <Send className="w-5 h-5" />
+                    发送消息
                   </button>
                 </form>
               </>

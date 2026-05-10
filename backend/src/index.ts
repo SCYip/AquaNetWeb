@@ -11,32 +11,32 @@ const app = express()
 const PORT = process.env.PORT || 3000
 
 // CORS
-const corsOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:5174')
-  .split(',')
-  .map(o => o.trim())
-  .filter(Boolean)
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:4173',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:4173',
+  'https://aquanet-water.org',
+  'https://www.aquanet-water.org',
+]
+
+const netlifyRegex = /^https:\/\/.*--aquanet-.*\.netlify\.app$/
+const vercelRegex = /^https:\/\/.*\.vercel\.app$/
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, Postman, etc.)
     if (!origin) {
       return callback(null, true)
     }
 
-    // Allow exact matches or subdomain matching
-    const isAllowed = corsOrigins.some(allowed => {
-      const allowedUrl = new URL(allowed)
-      const originUrl = new URL(origin)
-      return (
-        origin === allowed ||
-        (originUrl.hostname === allowedUrl.hostname && originUrl.protocol === allowedUrl.protocol)
-      )
-    })
-
-    if (isAllowed) {
+    if (
+      allowedOrigins.includes(origin) ||
+      netlifyRegex.test(origin) ||
+      vercelRegex.test(origin)
+    ) {
       callback(null, true)
     } else {
-      callback(new Error(`CORS: origin ${origin} not allowed. Allowed: ${corsOrigins.join(', ')}`))
+      callback(new Error(`CORS: origin ${origin} not allowed`))
     }
   },
   credentials: true,

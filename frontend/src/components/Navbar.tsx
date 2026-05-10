@@ -1,175 +1,149 @@
+import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { LogOut, LayoutDashboard } from 'lucide-react'
+import { LogOut, LayoutDashboard, Menu, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 export const Navbar = () => {
   const location = useLocation()
   const { isLoggedIn, user, logout } = useAuth()
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   const isActive = (path: string) => location.pathname === path
 
-  return (
-    <nav className="bg-blue-900 text-white shadow-lg sticky top-0 z-50 w-full">
-      <div className="w-full px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo - Left Side */}
-          <div className="flex-shrink-0">
-            <Link to="/" className="flex items-center cursor-pointer">
-              <img 
-                src="/aquanet-logo.png" 
-                alt="AquaNet Logo" 
-                className="h-10 w-auto mr-2"
-              />
-              <span className="font-bold text-xl tracking-wider text-cyan-400">AquaNet</span>
-            </Link>
-          </div>
+  const navLinks = [
+    { to: '/', label: '首页' },
+    { to: '/about', label: '关于我们' },
+    { to: '/map', label: '实时地图' },
+    { to: '/contact', label: '联系我们' },
+  ]
 
-          {/* Desktop Navigation - Right Side */}
-          <div className="hidden md:flex items-center space-x-6 flex-shrink-0">
-            <Link
-              to="/"
-              className={`hover:text-cyan-400 transition-colors whitespace-nowrap ${
-                isActive('/') ? 'text-cyan-400 font-semibold' : ''
-              }`}
-            >
-              Home
-            </Link>
-            <Link
-              to="/about"
-              className={`hover:text-cyan-400 transition-colors whitespace-nowrap ${
-                isActive('/about') ? 'text-cyan-400 font-semibold' : ''
-              }`}
-            >
-              About
-            </Link>
-            <Link
-              to="/map"
-              className={`hover:text-cyan-400 transition-colors whitespace-nowrap ${
-                isActive('/map') ? 'text-cyan-400 font-semibold' : ''
-              }`}
-            >
-              Live Map
-            </Link>
-            
+  return (
+    <nav className="sticky top-0 z-50 bg-ocean-900 text-white shadow-lg">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="w-9 h-9 rounded-full bg-sea-500 flex items-center justify-center shadow-md group-hover:bg-sea-400 transition-colors">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M8 12h4l2-4 2 8 2-4h0"/>
+              </svg>
+            </div>
+            <span className="font-heading text-xl font-bold tracking-wide text-white">
+              AquaNet<span className="text-sea-400"> 水眸</span>
+            </span>
+          </Link>
+
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map(link => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  isActive(link.to)
+                    ? 'bg-ocean-800 text-sea-400'
+                    : 'text-ocean-200 hover:text-white hover:bg-ocean-800'
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+
             {isLoggedIn && (
               <Link
                 to="/devices"
-                className={`hover:text-cyan-400 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
-                  isActive('/devices') ? 'text-cyan-400 font-semibold' : ''
+                className={`ml-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-1.5 ${
+                  isActive('/devices')
+                    ? 'bg-ocean-800 text-sea-400'
+                    : 'text-ocean-200 hover:text-white hover:bg-ocean-800'
                 }`}
               >
-                <LayoutDashboard className="h-4 w-4" />
-                My Devices
+                <LayoutDashboard className="w-4 h-4" />
+                我的设备
               </Link>
             )}
 
-            <Link
-              to="/contact"
-              className={`hover:text-cyan-400 transition-colors whitespace-nowrap ${
-                isActive('/contact') ? 'text-cyan-400 font-semibold' : ''
-              }`}
-            >
-              Contact
-            </Link>
-            
             {isLoggedIn ? (
-              <div className="flex items-center space-x-4 ml-4 border-l border-blue-700 pl-4">
-                <span className="text-sm text-cyan-300">{user?.name}</span>
+              <div className="flex items-center gap-3 ml-4 pl-4 border-l border-ocean-700">
+                <span className="text-sm text-sea-300 font-medium">{user?.name}</span>
                 <button
                   onClick={logout}
-                  className="text-gray-300 hover:text-white transition-colors flex items-center gap-1.5"
-                  title="Logout"
+                  className="p-2 rounded-lg text-ocean-300 hover:text-white hover:bg-ocean-800 transition-colors"
+                  title="退出登录"
                 >
-                  <LogOut className="h-4 w-4" />
-                  <span className="text-sm">Logout</span>
+                  <LogOut className="w-4 h-4" />
                 </button>
               </div>
             ) : (
-              <div className="ml-4 border-l border-blue-700 pl-4">
-                <Link
-                  to="/login"
-                  className="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-md font-medium transition-colors whitespace-nowrap"
-                >
-                  Login / Register
-                </Link>
-              </div>
+              <Link
+                to="/login"
+                className="ml-4 px-5 py-2 bg-sea-600 hover:bg-sea-500 text-white text-sm font-semibold rounded-full transition-colors shadow-sm"
+              >
+                登录
+              </Link>
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center flex-shrink-0">
+          <button
+            className="md:hidden p-2 rounded-lg text-ocean-200 hover:text-white hover:bg-ocean-800 transition-colors"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
+
+      {mobileOpen && (
+        <div className="md:hidden border-t border-ocean-800 bg-ocean-900">
+          <div className="px-4 py-4 space-y-1">
+            {navLinks.map(link => (
+              <Link
+                key={link.to}
+                to={link.to}
+                onClick={() => setMobileOpen(false)}
+                className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  isActive(link.to)
+                    ? 'bg-ocean-800 text-sea-400'
+                    : 'text-ocean-200 hover:text-white hover:bg-ocean-800'
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
             {isLoggedIn && (
-              <span className="mr-4 text-sm text-cyan-400">{user?.name}</span>
+              <Link
+                to="/devices"
+                onClick={() => setMobileOpen(false)}
+                className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                  isActive('/devices')
+                    ? 'bg-ocean-800 text-sea-400'
+                    : 'text-ocean-200 hover:text-white hover:bg-ocean-800'
+                }`}
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                我的设备
+              </Link>
+            )}
+            {isLoggedIn ? (
+              <button
+                onClick={() => { logout(); setMobileOpen(false) }}
+                className="w-full text-left block px-4 py-3 rounded-lg text-sm font-medium text-red-300 hover:text-red-200 hover:bg-ocean-800 transition-colors flex items-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                退出登录
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                onClick={() => setMobileOpen(false)}
+                className="block text-center px-4 py-3 mt-2 bg-sea-600 hover:bg-sea-500 text-white text-sm font-semibold rounded-full transition-colors"
+              >
+                登录 / 注册
+              </Link>
             )}
           </div>
         </div>
-      </div>
-
-      {/* Mobile Navigation */}
-      <div className="md:hidden border-t border-blue-800">
-        <div className="px-4 py-3 space-y-2">
-          <Link
-            to="/"
-            className={`block px-3 py-2 rounded-md hover:bg-blue-800 transition-colors ${
-              isActive('/') ? 'bg-blue-800 text-cyan-400' : ''
-            }`}
-          >
-            Home
-          </Link>
-          <Link
-            to="/about"
-            className={`block px-3 py-2 rounded-md hover:bg-blue-800 transition-colors ${
-              isActive('/about') ? 'bg-blue-800 text-cyan-400' : ''
-            }`}
-          >
-            About
-          </Link>
-          <Link
-            to="/map"
-            className={`block px-3 py-2 rounded-md hover:bg-blue-800 transition-colors ${
-              isActive('/map') ? 'bg-blue-800 text-cyan-400' : ''
-            }`}
-          >
-            Live Map
-          </Link>
-          
-          {isLoggedIn && (
-            <Link
-              to="/devices"
-              className={`block px-3 py-2 rounded-md hover:bg-blue-800 transition-colors ${
-                isActive('/devices') ? 'bg-blue-800 text-cyan-400' : ''
-              }`}
-            >
-              My Devices
-            </Link>
-          )}
-          
-          <Link
-            to="/contact"
-            className={`block px-3 py-2 rounded-md hover:bg-blue-800 transition-colors ${
-              isActive('/contact') ? 'bg-blue-800 text-cyan-400' : ''
-            }`}
-          >
-            Contact
-          </Link>
-          
-          {isLoggedIn ? (
-            <button
-              onClick={logout}
-              className="block w-full text-left px-3 py-2 rounded-md hover:bg-blue-800 transition-colors text-red-300 hover:text-red-200"
-            >
-              Logout
-            </button>
-          ) : (
-            <Link
-              to="/login"
-              className="block px-3 py-2 rounded-md bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-center"
-            >
-              Login / Register
-            </Link>
-          )}
-        </div>
-      </div>
+      )}
     </nav>
   )
 }

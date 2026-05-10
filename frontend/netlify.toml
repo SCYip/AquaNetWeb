@@ -5,24 +5,32 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# ── Environment variables injected at deploy time ──────────────────────────
-# Netlify CDN serves the frontend; the browser calls the API at this URL.
+# Environment variables — set your Aliyun ECS public IP or domain here.
+# The browser calls the API at this URL. Make sure your backend is running and accessible.
+#
+# For Aliyun ECS with public IP:
+#   VITE_API_URL = "http://YOUR_ALIYUN_IP:3000/api"
+# For domain pointed to Aliyun:
+#   VITE_API_URL = "https://your-api-domain.com/api"
+# For Supabase backend (recommended):
+#   VITE_API_URL = "https://your-supabase-url/functions/v1/api"
+#
 [context.production.environment]
-  VITE_API_URL = "https://api.aquanet-water.org/api"
+  VITE_API_URL = "https://aquanet-water.org/api"
 
 [context.deploy-preview.environment]
-  VITE_API_URL = "https://api.aquanet-water.org/api"
+  VITE_API_URL = "https://aquanet-water.org/api"
 
 [context.branch-deploy.environment]
-  VITE_API_URL = "https://api.aquanet-water.org/api"
+  VITE_API_URL = "https://aquanet-water.org/api"
 
-# ── SPA routing ────────────────────────────────────────────────────────────
+# SPA routing — all routes go to index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# ── Security headers ───────────────────────────────────────────────────────
+# Security headers
 [[headers]]
   for = "/*"
   [headers.values]

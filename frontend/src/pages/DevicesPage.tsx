@@ -11,8 +11,7 @@ export const DevicesPage = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
-  // New buoy form state
+
   const [newBuoyName, setNewBuoyName] = useState('')
   const [newBuoyLat, setNewBuoyLat] = useState('')
   const [newBuoyLng, setNewBuoyLng] = useState('')
@@ -38,7 +37,7 @@ export const DevicesPage = () => {
   const handleAddBuoy = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user) return
-    
+
     setIsSubmitting(true)
     try {
       await createBuoy({
@@ -46,10 +45,7 @@ export const DevicesPage = () => {
         lat: parseFloat(newBuoyLat),
         lng: parseFloat(newBuoyLng),
       })
-      
-      // Reload buoys to get the new one with all fields
       await loadBuoys()
-      
       setShowAddForm(false)
       setNewBuoyName('')
       setNewBuoyLat('')
@@ -62,8 +58,8 @@ export const DevicesPage = () => {
   }
 
   const handleDeleteBuoy = async (buoyId: string) => {
-    if (!confirm('Are you sure you want to delete this device?')) return
-    
+    if (!confirm('确定要删除此设备吗？')) return
+
     try {
       await deleteBuoy(buoyId)
       setBuoys(buoys.filter(b => b.id !== buoyId))
@@ -75,7 +71,7 @@ export const DevicesPage = () => {
   if (authLoading || isLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-cyan-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-sea-600" />
       </div>
     )
   }
@@ -83,14 +79,17 @@ export const DevicesPage = () => {
   if (!isLoggedIn) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-4">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Sign in required</h2>
-          <p className="text-gray-600 mb-6">Please sign in to view your devices</p>
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 bg-sea-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <MapPin className="w-8 h-8 text-sea-500" />
+          </div>
+          <h2 className="text-2xl font-heading font-bold text-ocean-900 mb-3">请先登录</h2>
+          <p className="text-ocean-600 mb-6 text-sm">登录后可管理您的水质监测设备</p>
           <Link
             to="/login"
-            className="inline-block px-6 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-lg transition-colors"
+            className="inline-block px-6 py-3 bg-sea-600 hover:bg-sea-500 text-white font-semibold rounded-full transition-colors"
           >
-            Sign In
+            登录 / 注册
           </Link>
         </div>
       </div>
@@ -98,61 +97,61 @@ export const DevicesPage = () => {
   }
 
   return (
-    <div className="min-h-[80vh] px-4 py-8 max-w-7xl mx-auto">
+    <div className="min-h-[80vh] px-4 py-10 max-w-7xl mx-auto animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Devices</h1>
-          <p className="text-gray-600 mt-1">Manage your registered buoys and monitor water quality</p>
+          <h1 className="text-3xl font-heading font-bold text-ocean-900">我的设备</h1>
+          <p className="text-ocean-600 mt-1 text-sm">管理您的水质监测浮标</p>
         </div>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-lg transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-sea-600 hover:bg-sea-500 text-white font-semibold rounded-full transition-colors shadow-md"
         >
           <Plus className="w-5 h-5" />
-          Add Device
+          添加设备
         </button>
       </div>
 
       {/* Add Device Form */}
       {showAddForm && (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Register New Device</h3>
+        <div className="bg-white rounded-2xl shadow-soft border border-ocean-100/60 p-6 mb-8">
+          <h3 className="font-heading font-semibold text-ocean-900 mb-4">注册新设备</h3>
           <form onSubmit={handleAddBuoy} className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Device Name</label>
+              <label className="block text-sm font-medium text-ocean-800 mb-1">设备名称</label>
               <input
                 type="text"
                 value={newBuoyName}
                 onChange={(e) => setNewBuoyName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                placeholder="e.g., Beach Station A"
+                className="input-field"
+                placeholder="例如：海岸站 A"
                 required
                 disabled={isSubmitting}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Latitude</label>
+              <label className="block text-sm font-medium text-ocean-800 mb-1">纬度</label>
               <input
                 type="number"
                 step="any"
                 value={newBuoyLat}
                 onChange={(e) => setNewBuoyLat(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                placeholder="e.g., 37.7749"
+                className="input-field"
+                placeholder="例如：22.5431"
                 required
                 disabled={isSubmitting}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Longitude</label>
+              <label className="block text-sm font-medium text-ocean-800 mb-1">经度</label>
               <input
                 type="number"
                 step="any"
                 value={newBuoyLng}
                 onChange={(e) => setNewBuoyLng(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                placeholder="e.g., -122.4194"
+                className="input-field"
+                placeholder="例如：114.0579"
                 required
                 disabled={isSubmitting}
               />
@@ -161,17 +160,17 @@ export const DevicesPage = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-3 bg-sea-600 hover:bg-sea-500 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Add'}
+                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : '添加'}
               </button>
               <button
                 type="button"
                 onClick={() => setShowAddForm(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-3 border border-ocean-200 rounded-xl hover:bg-ocean-50 transition-colors text-ocean-600"
                 disabled={isSubmitting}
               >
-                Cancel
+                取消
               </button>
             </div>
           </form>
@@ -180,18 +179,18 @@ export const DevicesPage = () => {
 
       {/* Devices Grid */}
       {buoys.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-12 text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <MapPin className="w-8 h-8 text-gray-400" />
+        <div className="bg-white rounded-2xl shadow-soft border border-ocean-100/60 p-12 text-center">
+          <div className="w-16 h-16 bg-sea-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <MapPin className="w-8 h-8 text-sea-400" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No devices yet</h3>
-          <p className="text-gray-600 mb-6">Get started by adding your first buoy device</p>
+          <h3 className="text-xl font-heading font-bold text-ocean-900 mb-2">还没有设备</h3>
+          <p className="text-ocean-600 mb-6 text-sm">添加您的第一个水质监测浮标</p>
           <button
             onClick={() => setShowAddForm(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-sea-600 hover:bg-sea-500 text-white font-semibold rounded-full transition-colors shadow-md"
           >
             <Plus className="w-5 h-5" />
-            Add Your First Device
+            添加第一个设备
           </button>
         </div>
       ) : (
@@ -199,53 +198,48 @@ export const DevicesPage = () => {
           {buoys.map((buoy) => (
             <div
               key={buoy.id}
-              className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow"
+              className="bg-white rounded-2xl shadow-soft border border-ocean-100/60 overflow-hidden hover:shadow-lifted transition-all duration-300"
             >
-              {/* Card Header */}
-              <div className="bg-gradient-to-r from-blue-900 to-cyan-700 px-4 py-3 flex justify-between items-center">
-                <h3 className="text-white font-semibold truncate">{buoy.name}</h3>
+              <div className="bg-gradient-to-r from-ocean-800 to-ocean-700 px-5 py-4 flex justify-between items-center">
+                <h3 className="text-white font-heading font-semibold truncate">{buoy.name}</h3>
                 <button
                   onClick={() => handleDeleteBuoy(buoy.id)}
-                  className="p-1.5 text-red-300 hover:text-red-200 hover:bg-red-500/20 rounded transition-colors"
-                  title="Delete device"
+                  className="p-1.5 text-red-300 hover:text-red-200 hover:bg-red-500/20 rounded-lg transition-colors"
+                  title="删除设备"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Card Body */}
-              <div className="p-4">
-                {/* Location */}
-                <div className="flex items-center gap-2 text-gray-600 text-sm mb-4">
+              <div className="p-5">
+                <div className="flex items-center gap-2 text-ocean-500 text-sm mb-4">
                   <MapPin className="w-4 h-4" />
                   <span>{buoy.lat.toFixed(4)}, {buoy.lng.toFixed(4)}</span>
                 </div>
 
-                {/* Current Readings */}
                 <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="bg-orange-50 rounded-lg p-3 text-center">
-                    <Thermometer className="w-5 h-5 text-orange-500 mx-auto mb-1" />
-                    <div className="text-lg font-semibold text-gray-900">{buoy.temp}°C</div>
-                    <div className="text-xs text-gray-500">Temperature</div>
+                  <div className="bg-red-50 rounded-xl p-3 text-center">
+                    <Thermometer className="w-5 h-5 text-red-500 mx-auto mb-1" />
+                    <div className="text-lg font-bold text-ocean-900">{buoy.temp}°C</div>
+                    <div className="text-xs text-ocean-500">水温</div>
                   </div>
-                  <div className="bg-purple-50 rounded-lg p-3 text-center">
+                  <div className="bg-purple-50 rounded-xl p-3 text-center">
                     <Droplets className="w-5 h-5 text-purple-500 mx-auto mb-1" />
-                    <div className="text-lg font-semibold text-gray-900">{buoy.ph}</div>
-                    <div className="text-xs text-gray-500">pH Level</div>
+                    <div className="text-lg font-bold text-ocean-900">{buoy.ph}</div>
+                    <div className="text-xs text-ocean-500">pH值</div>
                   </div>
-                  <div className="bg-blue-50 rounded-lg p-3 text-center">
-                    <Eye className="w-5 h-5 text-blue-500 mx-auto mb-1" />
-                    <div className="text-lg font-semibold text-gray-900">{buoy.turbidity}</div>
-                    <div className="text-xs text-gray-500">Turbidity</div>
+                  <div className="bg-ocean-50 rounded-xl p-3 text-center">
+                    <Eye className="w-5 h-5 text-ocean-500 mx-auto mb-1" />
+                    <div className="text-lg font-bold text-ocean-900">{buoy.turbidity}</div>
+                    <div className="text-xs text-ocean-500">浊度</div>
                   </div>
                 </div>
 
-                {/* View on Map */}
                 <Link
                   to={`/map?buoy=${buoy.id}`}
-                  className="block w-full text-center py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors"
+                  className="block w-full text-center py-2.5 bg-ocean-50 hover:bg-ocean-100 text-ocean-700 font-medium rounded-xl transition-colors text-sm"
                 >
-                  View on Map
+                  在地图上查看
                 </Link>
               </div>
             </div>

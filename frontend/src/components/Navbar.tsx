@@ -12,9 +12,11 @@ export const Navbar = () => {
 
   const navLinks = [
     { to: '/', label: '首页' },
-    { to: '/about', label: '关于我们' },
+    { to: '/about', label: '关于' },
     { to: '/map', label: '实时地图' },
-    { to: '/contact', label: '联系我们' },
+    { to: '/reports', label: '公众来信' },
+    { to: '/dispatches', label: '团队手记' },
+    { to: '/contact', label: '联系' },
   ]
 
   return (

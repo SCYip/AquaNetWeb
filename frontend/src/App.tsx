@@ -8,6 +8,8 @@ import { LoginPage } from './pages/LoginPage'
 import { ContactPage } from './pages/ContactPage'
 import { DevicesPage } from './pages/DevicesPage'
 import { AboutPage } from './pages/AboutPage'
+import { ReportsPage } from './pages/ReportsPage'
+import { DispatchesPage } from './pages/DispatchesPage'
 
 function App() {
   return (
@@ -19,6 +21,8 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/map" element={<MapPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/dispatches" element={<DispatchesPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route

@@ -1,19 +1,23 @@
-import { api, type Buoy, type CreateBuoyData } from './api'
+import type { Buoy } from './api'
 import { supabase } from '../utils/supabase/client'
 import type { BuoyRow } from '../lib/types'
 
 /**
- * Get all deployed buoys (public, no auth required).
+ * buoyService — direct Supabase access for buoy data.
  *
- * Reads directly from Supabase via the publishable anon key — no Express
- * backend in the loop. RLS policy `buoys_select_all` permits anonymous
- * SELECT on every row. We filter to deployed buoys (lat & lng set) so the
- * Leaflet map doesn't choke on null coordinates.
- *
- * Telemetry fields are nullable in the schema; we coerce nulls to 0 so the
- * existing non-nullable Buoy type stays usable. If you need to distinguish
- * "0 reading" from "no reading", refactor Buoy to allow nulls and update
- * MapPage's tooltip rendering.
+ * The legacy Express backend (REST + JWT in localStorage) has been removed.
+ * Auth is owned by Supabase, so every write here is RLS-gated:
+ *   - SELECT: public on every row (`buoys_select_all`)
+ *   - UPDATE: owner can change their own row; anyone authenticated can
+ *     claim a row where `owner_id IS NULL` (`buoys_claim_unclaimed`)
+ *   - INSERT: admin-only (devices are pre-provisioned with claim codes)
+ */
+
+/* ── Public read paths ────────────────────────────────────────────────── */
+
+/**
+ * Get all deployed buoys with the legacy `Buoy` shape (nulls coerced to 0).
+ * Kept for any consumer that hasn't migrated to BuoyRow yet.
  */
 export const getAllBuoys = async (): Promise<Buoy[]> => {
   const { data, error } = await supabase
@@ -23,9 +27,7 @@ export const getAllBuoys = async (): Promise<Buoy[]> => {
     .not('lng', 'is', null)
     .order('created_at', { ascending: false })
 
-  if (error) {
-    throw new Error(`加载浮标数据失败 · Failed to load buoys: ${error.message}`)
-  }
+  if (error) throw new Error(`加载浮标数据失败 · ${error.message}`)
 
   return (data ?? []).map((b) => ({
     id: b.id,
@@ -43,10 +45,7 @@ export const getAllBuoys = async (): Promise<Buoy[]> => {
 
 /**
  * Get deployed buoys with full BuoyRow shape (nullable telemetry preserved).
- *
- * Use this when the consumer needs to distinguish "no reading" from "0".
- * The map popup uses it; the legacy `getAllBuoys` above still coerces nulls
- * to 0 for the older Buoy type.
+ * The map popup uses this so it can render `—` for missing readings.
  */
 export const getDeployedBuoys = async (): Promise<BuoyRow[]> => {
   const { data, error } = await supabase
@@ -60,47 +59,101 @@ export const getDeployedBuoys = async (): Promise<BuoyRow[]> => {
   return (data ?? []) as BuoyRow[]
 }
 
-// Get buoy by ID
-export const getBuoyById = async (id: string): Promise<Buoy> => {
-  return await api.getBuoyById(id)
+/* ── Owner read path (authenticated) ──────────────────────────────────── */
+
+/**
+ * List buoys owned by the current user. Includes both deployed and
+ * undeployed (claimed but coords not yet set) rows. RLS scopes the result
+ * to `owner_id = auth.uid()` automatically when a session is present.
+ */
+export const listMyBuoys = async (): Promise<BuoyRow[]> => {
+  const { data: sess } = await supabase.auth.getSession()
+  const uid = sess.session?.user.id
+  if (!uid) throw new Error('未登录 · Not authenticated')
+
+  const { data, error } = await supabase
+    .from('buoys')
+    .select('id, code, name, owner_id, lat, lng, temp, ph, turbidity, created_at, updated_at')
+    .eq('owner_id', uid)
+    .order('updated_at', { ascending: false })
+
+  if (error) throw new Error(`加载我的设备失败 · ${error.message}`)
+  return (data ?? []) as BuoyRow[]
 }
 
-// Get user's buoys (authenticated)
-export const getBuoysByOwner = async (ownerId: string): Promise<Buoy[]> => {
-  const token = localStorage.getItem('aquanet_token')
-  if (!token) throw new Error('Not authenticated')
-  const buoys = await api.getMyBuoys(token)
-  return buoys.filter(b => b.owner_id === ownerId)
+/* ── Owner write paths ────────────────────────────────────────────────── */
+
+/**
+ * Claim an unclaimed buoy by its physical code (e.g. AQN-TEST-0001).
+ *
+ * The DB enforces `owner_id IS NULL` via the `buoys_claim_unclaimed`
+ * RLS policy. If the row is already claimed, the UPDATE matches zero rows
+ * and we surface a clear bilingual error to the UI.
+ */
+export const claimBuoyByCode = async (
+  code: string,
+  name: string,
+): Promise<BuoyRow> => {
+  const trimmedCode = code.trim()
+  const trimmedName = name.trim()
+  if (!trimmedCode) throw new Error('请填写设备码 · Code required')
+  if (!trimmedName) throw new Error('请给设备起个名字 · Name required')
+
+  const { data: sess } = await supabase.auth.getSession()
+  const uid = sess.session?.user.id
+  if (!uid) throw new Error('未登录 · Not authenticated')
+
+  const { data, error } = await supabase
+    .from('buoys')
+    .update({ owner_id: uid, name: trimmedName })
+    .eq('code', trimmedCode)
+    .is('owner_id', null)
+    .select('id, code, name, owner_id, lat, lng, temp, ph, turbidity, created_at, updated_at')
+    .maybeSingle()
+
+  if (error) throw new Error(`认领失败 · ${error.message}`)
+  if (!data) {
+    throw new Error('找不到这个设备码，或者已经被别人认领了 · Code unknown or already claimed')
+  }
+
+  return data as BuoyRow
 }
 
-// Create new buoy
-export const createBuoy = async (data: CreateBuoyData): Promise<string> => {
-  const token = localStorage.getItem('aquanet_token')
-  if (!token) throw new Error('Not authenticated')
-  const buoy = await api.createBuoy(token, data)
-  return buoy.id
+/**
+ * Set the deployed location for a buoy you own.
+ * RLS allows this when `owner_id = auth.uid()`.
+ */
+export const deployBuoy = async (
+  id: string,
+  lat: number,
+  lng: number,
+): Promise<BuoyRow> => {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    throw new Error('坐标无效 · Invalid coordinates')
+  }
+  if (lat < -90 || lat > 90) throw new Error('纬度需在 -90 到 90 之间')
+  if (lng < -180 || lng > 180) throw new Error('经度需在 -180 到 180 之间')
+
+  const { data, error } = await supabase
+    .from('buoys')
+    .update({ lat, lng })
+    .eq('id', id)
+    .select('id, code, name, owner_id, lat, lng, temp, ph, turbidity, created_at, updated_at')
+    .single()
+
+  if (error) throw new Error(`部署失败 · ${error.message}`)
+  return data as BuoyRow
 }
 
-// Update buoy
-export const updateBuoy = async (id: string, data: Partial<Buoy>): Promise<Buoy> => {
-  const token = localStorage.getItem('aquanet_token')
-  if (!token) throw new Error('Not authenticated')
-  return await api.updateBuoy(token, id, data)
-}
+/**
+ * Release a buoy back to the unclaimed pool. Clears owner_id and coords
+ * so it can be reclaimed by someone else (or redeployed elsewhere).
+ */
+export const releaseBuoy = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from('buoys')
+    .update({ owner_id: null, lat: null, lng: null })
+    .eq('id', id)
 
-// Delete buoy
-export const deleteBuoy = async (id: string): Promise<void> => {
-  const token = localStorage.getItem('aquanet_token')
-  if (!token) throw new Error('Not authenticated')
-  await api.deleteBuoy(token, id)
-}
-
-// Update telemetry data (for buoy devices to send data)
-export const updateTelemetry = async (
-  buoyId: string,
-  data: { temp?: number; ph?: number; turbidity?: number }
-): Promise<Buoy> => {
-  const token = localStorage.getItem('aquanet_token')
-  if (!token) throw new Error('Not authenticated')
-  return await api.updateTelemetry(token, buoyId, data)
+  if (error) throw new Error(`释放失败 · ${error.message}`)
 }

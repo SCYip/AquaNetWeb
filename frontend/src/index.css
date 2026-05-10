@@ -178,6 +178,32 @@
   cursor: not-allowed;
 }
 
+/* — Inverted underline input for dark sections (DevicesPage CLAIM block) — */
+.aq-input-dark {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1.5px solid rgba(125, 212, 186, 0.5);  /* sea-300 @ 50% */
+  padding: 0.65rem 0.25rem;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 1rem;
+  color: #f4eee2;                                       /* sand-50 */
+  letter-spacing: 0.01em;
+  transition: border-color 200ms ease;
+}
+.aq-input-dark::placeholder {
+  color: rgba(125, 212, 186, 0.55);                     /* sea-300 muted */
+  font-style: italic;
+}
+.aq-input-dark:focus {
+  outline: none;
+  border-bottom-color: #a8e7d2;                         /* sea-200 */
+}
+.aq-input-dark:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* — Long-form article body, used by DispatchesPage — */
 .prose-aquanet {
   font-family: 'DM Sans', system-ui, sans-serif;

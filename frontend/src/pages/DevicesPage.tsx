@@ -1,251 +1,459 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import {
+  Loader2,
+  AlertCircle,
+  ArrowUpRight,
+  Radio,
+  MapPin,
+  Trash2,
+  Plus,
+  Check,
+  Thermometer,
+  Droplet,
+  Waves as WavesIcon,
+} from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { getBuoysByOwner, createBuoy, deleteBuoy } from '../services/buoyService'
-import type { Buoy } from '../services/api'
-import { Plus, Trash2, MapPin, Thermometer, Droplets, Eye, Loader2 } from 'lucide-react'
+import {
+  listMyBuoys,
+  claimBuoyByCode,
+  deployBuoy,
+  releaseBuoy,
+} from '../services/buoyService'
+import type { BuoyRow } from '../lib/types'
+import { ExportButton } from '../components/ExportButton'
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * DevicesPage — 我的设备 · MY DEVICES
+ *
+ * Two-step ownership flow: claim a buoy by its physical code, then deploy
+ * it by setting coordinates. Field Bulletin treatment.
+ *
+ * RLS handles permissions:
+ *   - claim: UPDATE allowed only when owner_id IS NULL
+ *   - deploy / release: UPDATE allowed only when owner_id = auth.uid()
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+const isDeployed = (b: BuoyRow): b is BuoyRow & { lat: number; lng: number } =>
+  b.lat !== null && b.lng !== null
+
+const fmtNum = (v: number | null | undefined, digits = 1, suffix = ''): string => {
+  if (v === null || v === undefined || Number.isNaN(Number(v))) return '—'
+  return `${Number(v).toFixed(digits)}${suffix}`
+}
 
 export const DevicesPage = () => {
-  const { user, isLoggedIn, isLoading: authLoading } = useAuth()
-  const [buoys, setBuoys] = useState<Buoy[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { user } = useAuth()
+  const [buoys, setBuoys] = useState<BuoyRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const [newBuoyName, setNewBuoyName] = useState('')
-  const [newBuoyLat, setNewBuoyLat] = useState('')
-  const [newBuoyLng, setNewBuoyLng] = useState('')
+  const [showClaim, setShowClaim] = useState(false)
+  const [claimCode, setClaimCode] = useState('')
+  const [claimName, setClaimName] = useState('')
+  const [claimError, setClaimError] = useState<string | null>(null)
+  const [claiming, setClaiming] = useState(false)
 
   useEffect(() => {
-    if (user) {
-      loadBuoys()
-    }
-  }, [user])
+    void load()
+  }, [])
 
-  const loadBuoys = async () => {
-    if (!user) return
+  const load = async () => {
     try {
-      const userBuoys = await getBuoysByOwner(user.id)
-      setBuoys(userBuoys)
-    } catch (error) {
-      console.error('Error loading buoys:', error)
+      const data = await listMyBuoys()
+      setBuoys(data)
+      setError(null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '加载失败')
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
-  const handleAddBuoy = async (e: React.FormEvent) => {
+  const onClaim = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user) return
-
-    setIsSubmitting(true)
+    setClaimError(null)
+    setClaiming(true)
     try {
-      await createBuoy({
-        name: newBuoyName,
-        lat: parseFloat(newBuoyLat),
-        lng: parseFloat(newBuoyLng),
-      })
-      await loadBuoys()
-      setShowAddForm(false)
-      setNewBuoyName('')
-      setNewBuoyLat('')
-      setNewBuoyLng('')
-    } catch (error) {
-      console.error('Error creating buoy:', error)
+      const claimed = await claimBuoyByCode(claimCode, claimName)
+      setBuoys((prev) => [claimed, ...prev])
+      setClaimCode('')
+      setClaimName('')
+      setShowClaim(false)
+    } catch (err) {
+      setClaimError(err instanceof Error ? err.message : '认领失败')
     } finally {
-      setIsSubmitting(false)
+      setClaiming(false)
     }
   }
 
-  const handleDeleteBuoy = async (buoyId: string) => {
-    if (!confirm('确定要删除此设备吗？')) return
-
-    try {
-      await deleteBuoy(buoyId)
-      setBuoys(buoys.filter(b => b.id !== buoyId))
-    } catch (error) {
-      console.error('Error deleting buoy:', error)
-    }
+  const onDeploy = async (id: string, lat: number, lng: number) => {
+    const updated = await deployBuoy(id, lat, lng)
+    setBuoys((prev) => prev.map((b) => (b.id === id ? updated : b)))
   }
 
-  if (authLoading || isLoading) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-sea-600" />
-      </div>
-    )
+  const onRelease = async (id: string) => {
+    if (!confirm('确认释放这台设备？认领码会回到公共池中，其他人可以重新认领。')) return
+    await releaseBuoy(id)
+    setBuoys((prev) => prev.filter((b) => b.id !== id))
   }
 
-  if (!isLoggedIn) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 bg-sea-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <MapPin className="w-8 h-8 text-sea-500" />
+  const deployed = buoys.filter(isDeployed)
+
+  return (
+    <div className="bg-sand-50 text-ocean-950 min-h-[80vh]">
+      {/* ─── 00 · MASTHEAD ─────────────────────────────────────────────── */}
+      <header className="bg-grain bg-sand-50 border-b-[3px] border-double border-ocean-900/80">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-10 pb-14 md:pt-14 md:pb-20">
+          <div className="flex flex-wrap items-baseline justify-between gap-y-2 mono-label text-ocean-700 mb-12 md:mb-14 pb-3 border-b border-ocean-300/70">
+            <span>AQUANET 水眸 · 第一期 · ISSUE 01</span>
+            <span className="hidden sm:inline">FROM YOUR DESK · 你的工作台</span>
+            <span className="text-sea-700">我的设备 · MY DEVICES</span>
           </div>
-          <h2 className="text-2xl font-heading font-bold text-ocean-900 mb-3">请先登录</h2>
-          <p className="text-ocean-600 mb-6 text-sm">登录后可管理您的水质监测设备</p>
-          <Link
-            to="/login"
-            className="inline-block px-6 py-3 bg-sea-600 hover:bg-sea-500 text-white font-semibold rounded-full transition-colors"
-          >
-            登录 / 注册
-          </Link>
+
+          <div className="grid grid-cols-12 gap-y-10 md:gap-x-10 lg:gap-x-16">
+            <div className="col-span-12 lg:col-span-8">
+              <p className="section-eyebrow text-sea-700 mb-7">
+                {user ? `BY ${user.name.toUpperCase()}` : 'YOUR DESK'} · 工作台
+              </p>
+              <h1 className="font-heading font-semibold text-ocean-950 leading-[0.95] tracking-tight text-[clamp(2rem,5.5vw,4.5rem)]">
+                这些<span className="display-italic text-sea-700">是你</span>，<br />
+                负责的<span className="display-italic text-sand-700">那几台</span>。
+              </h1>
+              <div className="mt-10 flex items-center gap-4 mono-label text-ocean-600">
+                <span className="rule-fade w-12 text-ocean-400" />
+                CLAIM · DEPLOY · RELEASE
+              </div>
+            </div>
+
+            <aside className="col-span-12 lg:col-span-4 lg:pl-8 lg:border-l lg:border-ocean-300/80 flex flex-col justify-end">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-6 mb-8">
+                <Stat label="OWNED · 认领" value={String(buoys.length).padStart(2, '0')} />
+                <Stat label="LIVE · 在水里" value={String(deployed.length).padStart(2, '0')} />
+              </div>
+              <button
+                onClick={() => setShowClaim((s) => !s)}
+                className="mono-label inline-flex items-center justify-center gap-2 border border-ocean-900 px-5 py-3 hover:bg-ocean-950 hover:text-sand-50 transition-colors"
+              >
+                <Plus className="w-4 h-4" strokeWidth={2} />
+                {showClaim ? 'CLOSE · 收起' : 'CLAIM A DEVICE · 认领一台'}
+              </button>
+            </aside>
+          </div>
         </div>
-      </div>
-    )
+      </header>
+
+      {/* ─── §01 · CLAIM FORM (collapsible) ────────────────────────────── */}
+      {showClaim && (
+        <section className="bg-ocean-950 text-sand-50 reveal">
+          <div className="max-w-4xl mx-auto px-6 lg:px-8 py-16 md:py-20">
+            <p className="section-eyebrow text-sea-300 mb-5">01 · 认领 · CLAIM</p>
+            <h2 className="font-heading font-semibold leading-[0.98] text-[clamp(1.8rem,4vw,3rem)] mb-10">
+              拿出你的<span className="display-italic text-sea-200">认领码</span>。
+            </h2>
+
+            {claimError && (
+              <div className="border border-[#f08c6e] bg-[#3b1610] text-[#fbe9e1] p-4 flex gap-3 items-start mb-6">
+                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" strokeWidth={1.8} />
+                <div className="font-body text-sm leading-snug">{claimError}</div>
+              </div>
+            )}
+
+            <form onSubmit={onClaim} className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+              <div className="md:col-span-5">
+                <label className="block mono-label text-sea-200 mb-2">
+                  设备码 · DEVICE CODE
+                </label>
+                <input
+                  type="text"
+                  value={claimCode}
+                  onChange={(e) => setClaimCode(e.target.value.toUpperCase())}
+                  placeholder="AQN-XXXX-NNNN"
+                  required
+                  disabled={claiming}
+                  className="aq-input-dark"
+                />
+                <p className="mono-label-sm text-sea-300/70 mt-2">
+                  贴在设备底部的小字 · printed on the underside
+                </p>
+              </div>
+
+              <div className="md:col-span-5">
+                <label className="block mono-label text-sea-200 mb-2">
+                  设备名字 · NAME
+                </label>
+                <input
+                  type="text"
+                  value={claimName}
+                  onChange={(e) => setClaimName(e.target.value)}
+                  placeholder="例：盐田南角"
+                  required
+                  disabled={claiming}
+                  className="aq-input-dark"
+                />
+                <p className="mono-label-sm text-sea-300/70 mt-2">
+                  你之后会反复看到的名字 · what you&apos;ll see in the list
+                </p>
+              </div>
+
+              <div className="md:col-span-2">
+                <button
+                  type="submit"
+                  disabled={claiming}
+                  className="w-full bg-sea-400 text-ocean-950 mono-label py-3 hover:bg-sea-300 disabled:bg-ocean-700 disabled:cursor-wait transition-colors flex items-center justify-center gap-2"
+                >
+                  {claiming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" strokeWidth={2.5} />}
+                  CLAIM
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+      )}
+
+      {/* ─── §02 · DEVICE LIST ────────────────────────────────────────── */}
+      <section className="bg-sand-50 bg-grain reveal">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 md:py-20">
+          <div className="flex flex-wrap items-baseline justify-between gap-y-2 mb-10 pb-4 border-b border-ocean-200">
+            <h2 className="section-eyebrow text-ocean-900">
+              {showClaim ? '02' : '01'} · 名册 · ROSTER
+            </h2>
+            <span className="mono-label text-ocean-500">
+              {loading ? 'LOADING · 加载中' : `${buoys.length} ENTRIES · 共 ${buoys.length} 台`}
+            </span>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-24">
+              <Loader2 className="w-6 h-6 animate-spin text-ocean-500" />
+            </div>
+          ) : error ? (
+            <div className="border border-ocean-300 bg-white/60 backdrop-blur-sm p-10 text-center">
+              <AlertCircle className="w-7 h-7 text-[#a24b29] mx-auto mb-3" strokeWidth={1.5} />
+              <p className="display-italic text-2xl text-ocean-950 mb-2">读不到名册。</p>
+              <p className="mono-label text-ocean-600">{error}</p>
+            </div>
+          ) : buoys.length === 0 ? (
+            <div className="py-20 text-center">
+              <p className="display-italic text-3xl text-ocean-900 mb-4">
+                还没有<span className="text-sea-700">认领的设备</span>。
+              </p>
+              <p className="font-body text-ocean-600 mb-8 max-w-md mx-auto leading-[1.7]">
+                每一台 AquaNet 浮标都有自己的认领码——在底部的小字上。把它输进去，这台设备就归你管了。
+              </p>
+              <button
+                onClick={() => setShowClaim(true)}
+                className="mono-label inline-flex items-center gap-2 border border-ocean-900 px-5 py-3 hover:bg-ocean-950 hover:text-sand-50 transition-colors"
+              >
+                <Plus className="w-4 h-4" strokeWidth={2} />
+                CLAIM YOUR FIRST · 认领第一台
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {buoys.map((buoy) => (
+                <DeviceRow
+                  key={buoy.id}
+                  buoy={buoy}
+                  onDeploy={onDeploy}
+                  onRelease={onRelease}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+  )
+}
+
+/* ─── Stat block (masthead aside) ─────────────────────────────────────── */
+
+const Stat = ({ label, value }: { label: string; value: string }) => (
+  <div>
+    <div className="mono-label text-ocean-500 mb-2">{label}</div>
+    <div className="font-heading text-4xl text-ocean-950 tabular-nums">{value}</div>
+  </div>
+)
+
+/* ─── DeviceRow — one buoy card ───────────────────────────────────────── */
+
+interface DeviceRowProps {
+  buoy: BuoyRow
+  onDeploy: (id: string, lat: number, lng: number) => Promise<void>
+  onRelease: (id: string) => Promise<void>
+}
+
+const DeviceRow = ({ buoy, onDeploy, onRelease }: DeviceRowProps) => {
+  const deployed = isDeployed(buoy)
+  const [showDeployForm, setShowDeployForm] = useState(false)
+  const [lat, setLat] = useState(buoy.lat?.toString() ?? '22.5431')
+  const [lng, setLng] = useState(buoy.lng?.toString() ?? '114.0579')
+  const [deployErr, setDeployErr] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  const handleDeploy = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setDeployErr(null)
+    setSubmitting(true)
+    try {
+      await onDeploy(buoy.id, parseFloat(lat), parseFloat(lng))
+      setShowDeployForm(false)
+    } catch (err) {
+      setDeployErr(err instanceof Error ? err.message : '部署失败')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
-    <div className="min-h-[80vh] px-4 py-10 max-w-7xl mx-auto animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
-        <div>
-          <h1 className="text-3xl font-heading font-bold text-ocean-900">我的设备</h1>
-          <p className="text-ocean-600 mt-1 text-sm">管理您的水质监测浮标</p>
+    <article className="border-[1.5px] border-ocean-900/80 bg-white/70 backdrop-blur-sm">
+      <header className="border-b border-ocean-200 px-6 py-4 flex flex-wrap items-baseline justify-between gap-y-2">
+        <div className="flex items-baseline gap-3 mono-label">
+          <span className="text-sea-700 inline-flex items-center gap-1.5">
+            <Radio className="w-3.5 h-3.5" strokeWidth={2} />
+            DEVICE
+          </span>
+          <span className="text-ocean-300" aria-hidden>·</span>
+          <span className="text-ocean-500 tabular-nums">{buoy.code}</span>
         </div>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-sea-600 hover:bg-sea-500 text-white font-semibold rounded-full transition-colors shadow-md"
-        >
-          <Plus className="w-5 h-5" />
-          添加设备
-        </button>
+        <div className="mono-label-sm">
+          {deployed ? (
+            <span className="text-sea-700 inline-flex items-center gap-1.5">
+              <span className="live-dot" /> LIVE · 在水里
+            </span>
+          ) : (
+            <span className="text-[#a24b29]">UNDEPLOYED · 待部署</span>
+          )}
+        </div>
+      </header>
+
+      <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-10 items-start">
+        <div className="md:col-span-5">
+          <h3 className="font-heading text-3xl text-ocean-950 leading-[1.1] mb-2">{buoy.name}</h3>
+          {deployed ? (
+            <p className="mono-label-sm text-ocean-500 tabular-nums inline-flex items-center gap-2">
+              <MapPin className="w-3 h-3" strokeWidth={2} />
+              {buoy.lat?.toFixed(4)}°N · {buoy.lng?.toFixed(4)}°E
+            </p>
+          ) : (
+            <p className="font-body text-ocean-600 leading-[1.7] text-sm">
+              已认领但还没下水。<span className="display-italic text-sea-700">想清楚了再放</span>。
+            </p>
+          )}
+        </div>
+
+        {deployed ? (
+          <div className="md:col-span-7 grid grid-cols-3 gap-x-4 md:gap-x-8">
+            <Mini icon={<Thermometer className="w-3.5 h-3.5" />} label="水温" value={fmtNum(buoy.temp, 1, '°C')} />
+            <Mini icon={<Droplet className="w-3.5 h-3.5" />} label="pH" value={fmtNum(buoy.ph, 2)} />
+            <Mini icon={<WavesIcon className="w-3.5 h-3.5" />} label="浊度" value={fmtNum(buoy.turbidity, 1, ' NTU')} warn={buoy.turbidity !== null && Number(buoy.turbidity) > 15} />
+          </div>
+        ) : null}
       </div>
 
-      {/* Add Device Form */}
-      {showAddForm && (
-        <div className="bg-white rounded-2xl shadow-soft border border-ocean-100/60 p-6 mb-8">
-          <h3 className="font-heading font-semibold text-ocean-900 mb-4">注册新设备</h3>
-          <form onSubmit={handleAddBuoy} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-ocean-800 mb-1">设备名称</label>
-              <input
-                type="text"
-                value={newBuoyName}
-                onChange={(e) => setNewBuoyName(e.target.value)}
-                className="input-field"
-                placeholder="例如：海岸站 A"
-                required
-                disabled={isSubmitting}
-              />
+      {!deployed && showDeployForm && (
+        <div className="border-t border-ocean-200 bg-ocean-50/60 px-6 py-6">
+          {deployErr && (
+            <div className="border border-[#a24b29] bg-[#fbe9e1] text-[#7a3119] p-3 mb-4 text-sm flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" strokeWidth={1.8} />
+              {deployErr}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-ocean-800 mb-1">纬度</label>
+          )}
+          <form onSubmit={handleDeploy} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+            <div className="md:col-span-5">
+              <label className="block mono-label text-ocean-700 mb-2">纬度 · LAT</label>
               <input
                 type="number"
                 step="any"
-                value={newBuoyLat}
-                onChange={(e) => setNewBuoyLat(e.target.value)}
-                className="input-field"
-                placeholder="例如：22.5431"
+                value={lat}
+                onChange={(e) => setLat(e.target.value)}
+                placeholder="22.5431"
                 required
-                disabled={isSubmitting}
+                disabled={submitting}
+                className="aq-input"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-ocean-800 mb-1">经度</label>
+            <div className="md:col-span-5">
+              <label className="block mono-label text-ocean-700 mb-2">经度 · LNG</label>
               <input
                 type="number"
                 step="any"
-                value={newBuoyLng}
-                onChange={(e) => setNewBuoyLng(e.target.value)}
-                className="input-field"
-                placeholder="例如：114.0579"
+                value={lng}
+                onChange={(e) => setLng(e.target.value)}
+                placeholder="114.0579"
                 required
-                disabled={isSubmitting}
+                disabled={submitting}
+                className="aq-input"
               />
             </div>
-            <div className="flex items-end gap-2">
+            <div className="md:col-span-2">
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="flex-1 px-4 py-3 bg-sea-600 hover:bg-sea-500 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                disabled={submitting}
+                className="w-full bg-ocean-950 text-sand-50 mono-label py-3 hover:bg-sea-700 transition-colors disabled:bg-ocean-700 disabled:cursor-wait flex items-center justify-center gap-2"
               >
-                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : '添加'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAddForm(false)}
-                className="px-4 py-3 border border-ocean-200 rounded-xl hover:bg-ocean-50 transition-colors text-ocean-600"
-                disabled={isSubmitting}
-              >
-                取消
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" strokeWidth={2.5} />}
+                DEPLOY
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* Devices Grid */}
-      {buoys.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-soft border border-ocean-100/60 p-12 text-center">
-          <div className="w-16 h-16 bg-sea-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <MapPin className="w-8 h-8 text-sea-400" />
-          </div>
-          <h3 className="text-xl font-heading font-bold text-ocean-900 mb-2">还没有设备</h3>
-          <p className="text-ocean-600 mb-6 text-sm">添加您的第一个水质监测浮标</p>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-sea-600 hover:bg-sea-500 text-white font-semibold rounded-full transition-colors shadow-md"
-          >
-            <Plus className="w-5 h-5" />
-            添加第一个设备
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {buoys.map((buoy) => (
-            <div
-              key={buoy.id}
-              className="bg-white rounded-2xl shadow-soft border border-ocean-100/60 overflow-hidden hover:shadow-lifted transition-all duration-300"
+      <footer className="border-t border-ocean-200 px-6 py-4 flex flex-wrap items-center gap-x-6 gap-y-3 justify-between">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {deployed ? (
+            <>
+              <Link
+                to="/map"
+                className="mono-label-sm border-b border-ocean-400 pb-px text-ocean-700 hover:text-ocean-950 hover:border-ocean-900 inline-flex items-center gap-1 transition-colors"
+              >
+                VIEW ON MAP · 看地图
+                <ArrowUpRight className="w-3 h-3" />
+              </Link>
+              <ExportButton variant="single" buoy={buoy} size="sm" />
+            </>
+          ) : (
+            <button
+              onClick={() => setShowDeployForm((s) => !s)}
+              className="mono-label-sm border-b border-sea-700 pb-px text-sea-700 hover:text-ocean-950 hover:border-ocean-900 inline-flex items-center gap-1 transition-colors"
             >
-              <div className="bg-gradient-to-r from-ocean-800 to-ocean-700 px-5 py-4 flex justify-between items-center">
-                <h3 className="text-white font-heading font-semibold truncate">{buoy.name}</h3>
-                <button
-                  onClick={() => handleDeleteBuoy(buoy.id)}
-                  className="p-1.5 text-red-300 hover:text-red-200 hover:bg-red-500/20 rounded-lg transition-colors"
-                  title="删除设备"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="p-5">
-                <div className="flex items-center gap-2 text-ocean-500 text-sm mb-4">
-                  <MapPin className="w-4 h-4" />
-                  <span>{buoy.lat.toFixed(4)}, {buoy.lng.toFixed(4)}</span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="bg-red-50 rounded-xl p-3 text-center">
-                    <Thermometer className="w-5 h-5 text-red-500 mx-auto mb-1" />
-                    <div className="text-lg font-bold text-ocean-900">{buoy.temp}°C</div>
-                    <div className="text-xs text-ocean-500">水温</div>
-                  </div>
-                  <div className="bg-purple-50 rounded-xl p-3 text-center">
-                    <Droplets className="w-5 h-5 text-purple-500 mx-auto mb-1" />
-                    <div className="text-lg font-bold text-ocean-900">{buoy.ph}</div>
-                    <div className="text-xs text-ocean-500">pH值</div>
-                  </div>
-                  <div className="bg-ocean-50 rounded-xl p-3 text-center">
-                    <Eye className="w-5 h-5 text-ocean-500 mx-auto mb-1" />
-                    <div className="text-lg font-bold text-ocean-900">{buoy.turbidity}</div>
-                    <div className="text-xs text-ocean-500">浊度</div>
-                  </div>
-                </div>
-
-                <Link
-                  to={`/map?buoy=${buoy.id}`}
-                  className="block w-full text-center py-2.5 bg-ocean-50 hover:bg-ocean-100 text-ocean-700 font-medium rounded-xl transition-colors text-sm"
-                >
-                  在地图上查看
-                </Link>
-              </div>
-            </div>
-          ))}
+              {showDeployForm ? 'CANCEL · 取消' : 'DEPLOY · 部署到水里'}
+              <ArrowUpRight className="w-3 h-3" />
+            </button>
+          )}
         </div>
-      )}
-    </div>
+        <button
+          onClick={() => onRelease(buoy.id)}
+          className="mono-label-sm text-ocean-400 hover:text-[#a24b29] inline-flex items-center gap-1.5 transition-colors"
+          title="释放设备"
+        >
+          <Trash2 className="w-3 h-3" strokeWidth={2} />
+          RELEASE · 释放
+        </button>
+      </footer>
+    </article>
   )
 }
+
+/* ─── Compact telemetry mini ──────────────────────────────────────────── */
+
+interface MiniProps {
+  icon: React.ReactNode
+  label: string
+  value: string
+  warn?: boolean
+}
+
+const Mini = ({ icon, label, value, warn }: MiniProps) => (
+  <div>
+    <div className={`mono-label-sm inline-flex items-center gap-1.5 mb-1 ${warn ? 'text-[#a24b29]' : 'text-ocean-600'}`}>
+      {icon}
+      {label}
+    </div>
+    <div className={`font-heading text-2xl tabular-nums ${warn ? 'text-[#a24b29]' : 'text-ocean-950'}`}>
+      {value}
+    </div>
+  </div>
+)

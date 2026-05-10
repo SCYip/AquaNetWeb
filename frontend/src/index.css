@@ -151,6 +151,33 @@
   font-family: 'DM Sans', system-ui, sans-serif;
 }
 
+/* — Editorial input · used by LoginPage / DevicesPage forms — */
+.aq-input {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1.5px solid #4a8a9d;     /* ocean-500 */
+  padding: 0.65rem 0.25rem;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 1rem;
+  color: #07171f;                          /* ocean-950 */
+  letter-spacing: 0.01em;
+  transition: border-color 200ms ease, background 200ms ease;
+}
+.aq-input::placeholder {
+  color: #88a2b4;                          /* ocean-300 */
+  font-style: italic;
+}
+.aq-input:focus {
+  outline: none;
+  border-bottom-color: #082034;            /* ocean-900 */
+  background: rgba(255, 255, 255, 0.5);
+}
+.aq-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 /* — Long-form article body, used by DispatchesPage — */
 .prose-aquanet {
   font-family: 'DM Sans', system-ui, sans-serif;

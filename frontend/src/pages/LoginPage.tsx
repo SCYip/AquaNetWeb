@@ -1,316 +1,214 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Mail, Lock, User, AlertCircle, Loader2, Phone, MessageSquare } from 'lucide-react'
+import { useNavigate, Link } from 'react-router-dom'
+import { Mail, Lock, User, AlertCircle, Loader2, ArrowRight } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { api } from '../services/api'
 
-type LoginTab = 'email' | 'phone'
+/* ────────────────────────────────────────────────────────────────────────────
+ * LoginPage — 入口 · STAFF ENTRANCE
+ *
+ * Editorial sign-in page for the AquaNet team. Email + password only,
+ * delegated to Supabase auth via AuthContext. Visually it's a stationery
+ * card sitting on the sand-paper background — not the rounded-cyan
+ * SaaS card the old version used.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+type Mode = 'login' | 'register'
 
 export const LoginPage = () => {
   const navigate = useNavigate()
-  const { login, register, phoneLogin } = useAuth()
+  const { login, register } = useAuth()
 
-  const [activeTab, setActiveTab] = useState<LoginTab>('email')
-  const [isRegister, setIsRegister] = useState(false)
-
+  const [mode, setMode] = useState<Mode>('login')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [name, setName] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
-  const [phone, setPhone] = useState('')
-  const [code, setCode] = useState('')
-  const [codeSent, setCodeSent] = useState(false)
-  const [countdown, setCountdown] = useState(0)
-
-  const [error, setError] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const handleEmailSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
-    setIsSubmitting(true)
-
+    setError(null)
+    setInfo(null)
+    setSubmitting(true)
     try {
-      if (isRegister) {
-        await register(name, email, password)
+      if (mode === 'register') {
+        await register(name.trim() || email.split('@')[0], email, password)
+        setInfo('注册成功 · 请查邮箱完成验证后登录')
+        setMode('login')
+        setPassword('')
       } else {
         await login(email, password)
+        navigate('/devices')
       }
-      navigate('/devices')
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Authentication failed'
-      setError(errorMessage)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '登录失败')
     } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleSendCode = async () => {
-    setError('')
-    if (!phone || phone.length < 10) {
-      setError('Please enter a valid phone number')
-      return
-    }
-
-    setIsSubmitting(true)
-    try {
-      await api.sendPhoneCode(phone)
-      setCodeSent(true)
-      setCountdown(60)
-      const timer = setInterval(() => {
-        setCountdown((c) => {
-          if (c <= 1) {
-            clearInterval(timer)
-            return 0
-          }
-          return c - 1
-        })
-      }, 1000)
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to send code'
-      setError(errorMessage)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handlePhoneSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setIsSubmitting(true)
-
-    try {
-      await phoneLogin(phone, code)
-      navigate('/devices')
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Verification failed'
-      setError(errorMessage)
-    } finally {
-      setIsSubmitting(false)
+      setSubmitting(false)
     }
   }
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center px-4 py-12 bg-sand-50">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-3xl shadow-lifted border border-ocean-100/60 overflow-hidden">
-          <div className="bg-gradient-to-r from-ocean-800 to-ocean-700 px-8 py-8 text-center">
-            <h2 className="font-heading text-2xl font-bold text-white">
-              {isRegister ? '创建账户' : '欢迎回来'}
-            </h2>
-            <p className="text-ocean-300 mt-1 text-sm">
-              {isRegister ? '加入 AquaNet，一起守护水环境' : '登录访问您的设备管理'}
-            </p>
-          </div>
-
-          <div className="flex border-b border-ocean-100">
-            <button
-              type="button"
-              onClick={() => { setActiveTab('email'); setError(''); setCodeSent(false) }}
-              className={`flex-1 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                activeTab === 'email'
-                  ? 'text-sea-600 border-b-2 border-sea-600'
-                  : 'text-ocean-400 hover:text-ocean-600'
-              }`}
-            >
-              <Mail className="w-4 h-4" />
-              邮箱登录
-            </button>
-            <button
-              type="button"
-              onClick={() => { setActiveTab('phone'); setError(''); setCodeSent(false) }}
-              className={`flex-1 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                activeTab === 'phone'
-                  ? 'text-sea-600 border-b-2 border-sea-600'
-                  : 'text-ocean-400 hover:text-ocean-600'
-              }`}
-            >
-              <Phone className="w-4 h-4" />
-              手机登录
-            </button>
-          </div>
-
-          <div className="px-8 py-8">
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start text-red-700 text-sm">
-                <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            {activeTab === 'email' ? (
-              <form onSubmit={handleEmailSubmit} className="space-y-5">
-                {isRegister && (
-                  <div>
-                    <label className="block text-sm font-medium text-ocean-800 mb-1.5">姓名</label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-ocean-400" />
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="input-field pl-10"
-                        placeholder="John Doe"
-                        required
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-sm font-medium text-ocean-800 mb-1.5">邮箱地址</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-ocean-400" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="input-field pl-10"
-                      placeholder="you@example.com"
-                      required
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-ocean-800 mb-1.5">密码</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-ocean-400" />
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="input-field pl-10"
-                      placeholder="••••••••"
-                      required
-                      minLength={6}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full py-3 px-4 bg-sea-600 hover:bg-sea-500 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
-                >
-                  {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {isSubmitting ? '请稍候...' : isRegister ? '创建账户' : '登录'}
-                </button>
-
-                <p className="mt-4 text-center text-sm text-ocean-600">
-                  {isRegister ? '已有账户？' : '还没有账户？'}{' '}
-                  <button
-                    type="button"
-                    onClick={() => setIsRegister(!isRegister)}
-                    className="text-sea-600 hover:text-sea-500 font-semibold"
-                    disabled={isSubmitting}
-                  >
-                    {isRegister ? '登录' : '立即注册'}
-                  </button>
-                </p>
-              </form>
-            ) : (
-              <form onSubmit={handlePhoneSubmit} className="space-y-5">
-                {!codeSent ? (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-ocean-800 mb-1.5">手机号码</label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-ocean-400" />
-                        <input
-                          type="tel"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          className="input-field pl-10"
-                          placeholder="+86 123 4567 8901"
-                          required
-                          disabled={isSubmitting}
-                        />
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleSendCode}
-                      disabled={isSubmitting || countdown > 0}
-                      className="w-full py-3 px-4 bg-sea-600 hover:bg-sea-500 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-md"
-                    >
-                      {isSubmitting ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <MessageSquare className="w-4 h-4" />
-                      )}
-                      {countdown > 0 ? `${countdown}秒后重新发送` : '发送验证码'}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <div className="p-4 bg-sea-50 border border-sea-200 rounded-xl">
-                      <p className="text-sm text-sea-700">
-                        验证码已发送至 {phone}
-                      </p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-ocean-800 mb-1.5">验证码</label>
-                      <input
-                        type="text"
-                        value={code}
-                        onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        className="input-field text-center text-xl tracking-[0.3em]"
-                        placeholder="000000"
-                        required
-                        maxLength={6}
-                        disabled={isSubmitting}
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={isSubmitting || code.length !== 6}
-                      className="w-full py-3 px-4 bg-sea-600 hover:bg-sea-500 text-white font-semibold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-md"
-                    >
-                      {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                      {isSubmitting ? '验证中...' : '验证并登录'}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => { setCodeSent(false); setCode('') }}
-                      className="w-full py-2 text-sm text-ocean-500 hover:text-ocean-700"
-                      disabled={isSubmitting}
-                    >
-                      使用其他手机号
-                    </button>
-                  </>
-                )}
-              </form>
-            )}
-
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-ocean-100" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-ocean-400">或</span>
-              </div>
-            </div>
-
-            <button
-              disabled={isSubmitting}
-              className="w-full py-3 px-4 bg-green-600 hover:bg-green-500 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50 shadow-md"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348z"/>
-              </svg>
-              微信登录（即将上线）
-            </button>
-          </div>
+    <div className="bg-sand-50 bg-grain min-h-[88vh] text-ocean-950 flex items-center justify-center px-6 py-16">
+      <div className="w-full max-w-xl">
+        <div className="flex flex-wrap items-baseline justify-between gap-y-2 mono-label text-ocean-700 mb-8 pb-3 border-b border-ocean-300/70">
+          <span>AQUANET 水眸 · 第一期 · ISSUE 01</span>
+          <span className="text-sea-700">登录 · STAFF ENTRANCE</span>
         </div>
+
+        <p className="section-eyebrow text-sea-700 mb-5">
+          {mode === 'login' ? '回来 · WELCOME BACK' : '加入 · JOIN THE TEAM'}
+        </p>
+        <h1 className="font-heading font-semibold text-ocean-950 leading-[0.98] tracking-tight text-[clamp(2rem,5.2vw,3.6rem)] mb-4">
+          {mode === 'login' ? (
+            <>
+              请<span className="display-italic text-sea-700">报上你的</span>名字。
+            </>
+          ) : (
+            <>
+              <span className="display-italic text-sand-700">第一次</span>来。
+            </>
+          )}
+        </h1>
+        <p className="font-body text-ocean-700 leading-[1.7] max-w-prose mb-10">
+          {mode === 'login'
+            ? '登录后，你能管理自己认领的浮标、查看你的设备，下载属于你那片水域的数据。'
+            : '注册之后，你就拥有自己的设备页和一组属于自己的认领码。'}
+        </p>
+
+        <div className="border-[1.5px] border-ocean-900/80 bg-white/70 backdrop-blur-sm shadow-[0_24px_60px_-30px_rgba(8,32,52,0.4)]">
+          <div className="border-b border-ocean-200 px-7 py-5 flex items-center justify-between">
+            <div className="mono-label text-ocean-700">
+              {mode === 'login' ? '01 · 登录 · SIGN IN' : '01 · 注册 · CREATE ACCOUNT'}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setMode(mode === 'login' ? 'register' : 'login')
+                setError(null)
+                setInfo(null)
+              }}
+              className="mono-label-sm text-sea-700 hover:text-ocean-950 inline-flex items-center gap-1 transition-colors"
+            >
+              {mode === 'login' ? '切换到注册' : '切换到登录'}
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+
+          <form onSubmit={onSubmit} className="px-7 py-7 space-y-6">
+            {error && (
+              <div className="border border-[#a24b29] bg-[#fbe9e1] text-[#7a3119] p-4 flex gap-3 items-start">
+                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" strokeWidth={1.8} />
+                <div className="font-body text-sm leading-snug">{error}</div>
+              </div>
+            )}
+            {info && (
+              <div className="border border-sea-300 bg-sea-50 text-sea-700 p-4 mono-label-sm leading-relaxed">
+                {info}
+              </div>
+            )}
+
+            {mode === 'register' && (
+              <Field
+                label="姓名 · NAME"
+                hint="可以是真名，也可以是大家在群里叫你的"
+                icon={<User className="w-4 h-4" strokeWidth={1.8} />}
+              >
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="陈水眸"
+                  autoComplete="name"
+                  disabled={submitting}
+                  className="aq-input"
+                />
+              </Field>
+            )}
+
+            <Field
+              label="邮箱 · EMAIL"
+              hint="我们用这个发系统消息，比如认领提醒"
+              icon={<Mail className="w-4 h-4" strokeWidth={1.8} />}
+            >
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+                required
+                disabled={submitting}
+                className="aq-input"
+              />
+            </Field>
+
+            <Field
+              label="密码 · PASSWORD"
+              hint={mode === 'register' ? '至少 6 位，请别用生日' : ''}
+              icon={<Lock className="w-4 h-4" strokeWidth={1.8} />}
+            >
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                required
+                minLength={6}
+                disabled={submitting}
+                className="aq-input"
+              />
+            </Field>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full bg-ocean-950 text-sand-50 mono-label py-4 hover:bg-sea-700 disabled:bg-ocean-700 disabled:cursor-wait transition-colors flex items-center justify-center gap-2"
+            >
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              <span>
+                {submitting
+                  ? mode === 'login'
+                    ? 'SIGNING IN · 登录中'
+                    : 'CREATING · 注册中'
+                  : mode === 'login'
+                  ? 'SIGN IN · 登录'
+                  : 'CREATE ACCOUNT · 创建账号'}
+              </span>
+            </button>
+          </form>
+        </div>
+
+        <p className="mt-10 font-body text-sm text-ocean-600 leading-[1.8]">
+          忘了密码？暂时还没接通自助找回——先
+          <Link to="/contact" className="border-b border-ocean-400 pb-px hover:text-ocean-950 hover:border-ocean-900 transition-colors">联系我们</Link>
+          ，我们手动帮你重置。
+        </p>
       </div>
     </div>
   )
 }
+
+/* ── Editorial input field with mono label + helper hint ─────────────── */
+
+interface FieldProps {
+  label: string
+  hint?: string
+  icon?: React.ReactNode
+  children: React.ReactNode
+}
+
+const Field = ({ label, hint, icon, children }: FieldProps) => (
+  <label className="block">
+    <div className="flex items-baseline justify-between mb-2">
+      <span className="mono-label text-ocean-700 inline-flex items-center gap-1.5">
+        {icon}
+        {label}
+      </span>
+      {hint && <span className="mono-label-sm text-ocean-400 hidden sm:inline">{hint}</span>}
+    </div>
+    {children}
+    {hint && <span className="mono-label-sm text-ocean-400 sm:hidden block mt-1.5">{hint}</span>}
+  </label>
+)

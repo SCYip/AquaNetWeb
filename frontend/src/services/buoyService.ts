@@ -1,5 +1,6 @@
 import { api, type Buoy, type CreateBuoyData } from './api'
 import { supabase } from '../utils/supabase/client'
+import type { BuoyRow } from '../lib/types'
 
 /**
  * Get all deployed buoys (public, no auth required).
@@ -38,6 +39,25 @@ export const getAllBuoys = async (): Promise<Buoy[]> => {
     created_at: b.created_at ?? undefined,
     updated_at: b.updated_at ?? undefined,
   })) as Buoy[]
+}
+
+/**
+ * Get deployed buoys with full BuoyRow shape (nullable telemetry preserved).
+ *
+ * Use this when the consumer needs to distinguish "no reading" from "0".
+ * The map popup uses it; the legacy `getAllBuoys` above still coerces nulls
+ * to 0 for the older Buoy type.
+ */
+export const getDeployedBuoys = async (): Promise<BuoyRow[]> => {
+  const { data, error } = await supabase
+    .from('buoys')
+    .select('id, code, name, owner_id, lat, lng, temp, ph, turbidity, created_at, updated_at')
+    .not('lat', 'is', null)
+    .not('lng', 'is', null)
+    .order('updated_at', { ascending: false })
+
+  if (error) throw new Error(`加载浮标数据失败 · ${error.message}`)
+  return (data ?? []) as BuoyRow[]
 }
 
 // Get buoy by ID

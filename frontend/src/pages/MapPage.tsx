@@ -22,8 +22,9 @@ import { ExportButton } from '../components/ExportButton'
  * name so the fleet is readable at a glance. Click a marker for a stationery
  * popup with full telemetry.
  *
- * Wheel zoom is intentionally disabled — page scroll is the priority on a
- * long-form layout. Use the +/- buttons (or pinch on touch) to zoom.
+ * Wheel scroll over the map zooms; outside it scrolls the page. We use
+ * Leaflet's standard scrollWheelZoom (no custom momentum plugin) so the
+ * wheel hand-off between map and page is reliable.
  *
  * Telemetry fields are nullable in the schema, so any missing reading is
  * rendered as an em-dash rather than "0".
@@ -220,7 +221,9 @@ export const MapPage = () => {
               maxZoom={18}
               className="h-[68vh] min-h-[480px] w-full"
               zoomControl
-              scrollWheelZoom={false}
+              scrollWheelZoom
+              wheelDebounceTime={40}
+              wheelPxPerZoomLevel={120}
               dragging
               doubleClickZoom
               touchZoom

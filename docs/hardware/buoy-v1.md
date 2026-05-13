@@ -6,6 +6,13 @@ temperature / pH / turbidity and posts to Supabase every 5 minutes.
 **Design intent:** 高中生可以自己装得起来 — every part is off-the-shelf,
 no PCB fab needed, no custom moulding. Target cost per unit: **~$220 USD**.
 
+> **See it in 3D:** [`buoy-v1.blender.py`](./buoy-v1.blender.py) is a
+> self-contained Blender script that rebuilds this whole assembly from
+> the dimensions below. Open Blender 4.x → Scripting workspace → Open →
+> Run, or from a shell: `blender --background --python docs/hardware/buoy-v1.blender.py`.
+> The script wires up materials, two cameras (hero + section), and a
+> waterline reference plane.
+
 ---
 
 ## 1 · What to buy (BOM)

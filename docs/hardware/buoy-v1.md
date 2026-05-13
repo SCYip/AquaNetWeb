@@ -16,8 +16,8 @@ no PCB fab needed, no custom moulding. Target cost per unit: **~$220 USD**.
 
 | Hero | Section | Cutaway |
 | :--: | :--: | :--: |
-| ![hero](./renders/buoy-v1-hero.png) | ![section](./renders/buoy-v1-section.png) | ![cutaway](./renders/buoy-v1-cutaway.png) |
-| 3/4 view, full assembly | orthographic side, opaque | boolean-cut hull · electronics visible |
+| ![hero](./renders/buoy-hero.png) | ![section](./renders/buoy-section.png) | ![cutaway](./renders/buoy-cutaway.png) |
+| 3/4 view · clear dome, hi-viz foam, tail keel | orthographic side · service hatch visible | shell hidden · two-shelf electronics layout |
 
 ---
 
@@ -116,119 +116,70 @@ Tools (one-time): ~$100 if starting from scratch.
 
 ---
 
-## 2 · Shell design — Spar buoy
+## 2 · Shell design — Designed spar buoy
 
-The form factor is a **vertical PVC spar with a foam collar**. It floats
-upright like a fishing bobber. Wind doesn't tip it over because the
-weighted bottom + sensor stalk keeps the centre of mass below the
-waterline.
+The form factor is still a spar — vertical orientation is the only sane
+choice for solar + submerged sensors + wave stability. But the shell is
+no longer a piece of plumbing. The vocabulary, top to bottom:
 
-### 2.1 · External cross-section (side view)
+- **Clear acrylic dome** caps the body. The solar panel sits *inside*
+  the dome (visible through it, sealed against weather). The antenna
+  rises from the dome centre in a clear polycarbonate spire.
+- **Sea-cyan brand stripe + amber LED status window** wrap the upper
+  body just below the dome — the LED ring is the only thing that lights
+  up, so it gets a dedicated translucent band.
+- **Tapered HDPE-style body** with a subtle waist — the buoy "narrows"
+  at z=160mm before flaring back out. Not a parallel cylinder.
+- **Side service hatch** (not a top hatch) — a rounded rectangular plate
+  on the +Y face, secured with 4× M4 stainless bolts and a finger
+  recess grip. You service the electronics from the side, not by
+  pulling the dome off.
+- **Two recessed rubber lift grips** on opposite sides at z=140mm —
+  carries cleanly from a boat without slipping.
+- **Contoured foam collar** — rounded torus profile cut from polyethylene
+  foam, not a flat slab. Hugs the body at z=-65 → +45mm.
+- **Hi-viz orange band** cast into the foam at the waterline. Cannot
+  peel off like reflective tape.
+- **Tapered dark tail keel** descends to a **sensor pod** with three
+  probes (DS18B20 temp, BNC pH, optical turbidity) and a flush stainless
+  anchor eye at the very bottom.
 
-```svg
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 760" width="320" height="760" font-family="ui-monospace, Menlo, monospace" font-size="11">
-  <rect width="320" height="760" fill="#f6f0e3"/>
-  <line x1="0" y1="430" x2="320" y2="430" stroke="#1a4f6a" stroke-width="1" stroke-dasharray="4 4"/>
-  <text x="6" y="426" fill="#1a4f6a">waterline · 水线</text>
-  <text x="245" y="446" fill="#1a4f6a">±0 mm</text>
-
-  <line x1="160" y1="20" x2="160" y2="70" stroke="#07171f" stroke-width="2"/>
-  <circle cx="160" cy="20" r="3" fill="#07171f"/>
-  <text x="170" y="36" fill="#07171f">WiFi 2.4 GHz</text>
-  <text x="170" y="50" fill="#5d7a8a">SMA bulkhead</text>
-
-  <rect x="100" y="70" width="120" height="50" fill="#f4eee2" stroke="#07171f" stroke-width="1.5"/>
-  <rect x="115" y="80" width="90" height="30" fill="#0b3247" stroke="#07171f" stroke-width="0.75"/>
-  <text x="120" y="100" fill="#f4eee2">SOLAR 6V/5W</text>
-  <text x="225" y="100" fill="#07171f">+95 mm</text>
-
-  <rect x="100" y="120" width="120" height="22" fill="#f4eee2" stroke="#07171f" stroke-width="1.5"/>
-  <circle cx="120" cy="131" r="2.5" fill="#32907e"/>
-  <circle cx="140" cy="131" r="2.5" fill="#32907e"/>
-  <circle cx="160" cy="131" r="2.5" fill="#32907e"/>
-  <circle cx="180" cy="131" r="2.5" fill="#32907e"/>
-  <circle cx="200" cy="131" r="2.5" fill="#32907e"/>
-  <text x="225" y="135" fill="#07171f">+70 mm  · status LEDs</text>
-
-  <rect x="100" y="142" width="120" height="6" fill="#c7d3dc" stroke="#07171f" stroke-width="1"/>
-  <text x="225" y="148" fill="#5d7a8a">M4 hatch bolts (×4) + O-ring</text>
-
-  <rect x="100" y="148" width="120" height="240" fill="#fffaf0" stroke="#07171f" stroke-width="1.5"/>
-  <text x="113" y="170" fill="#07171f" font-weight="600">DRY BAY · 干舱</text>
-  <text x="113" y="186" fill="#5d7a8a">110 mm OD PVC</text>
-  <text x="113" y="200" fill="#5d7a8a">240 mm tall</text>
-  <text x="113" y="222" fill="#07171f">  shelf A</text>
-  <line x1="100" y1="226" x2="220" y2="226" stroke="#07171f" stroke-width="0.75" stroke-dasharray="2 2"/>
-  <text x="113" y="244" fill="#5d7a8a">MCU board</text>
-  <text x="113" y="258" fill="#5d7a8a">sensor board</text>
-  <text x="113" y="272" fill="#5d7a8a">ADC + RTC</text>
-  <text x="113" y="294" fill="#07171f">  shelf B</text>
-  <line x1="100" y1="298" x2="220" y2="298" stroke="#07171f" stroke-width="0.75" stroke-dasharray="2 2"/>
-  <text x="113" y="316" fill="#5d7a8a">battery 2x18650</text>
-  <text x="113" y="330" fill="#5d7a8a">BMS + charger</text>
-  <text x="113" y="358" fill="#5d7a8a">power switch</text>
-  <text x="225" y="270" fill="#07171f">+50 to -190 mm</text>
-
-  <rect x="60" y="388" width="200" height="80" fill="#d9c7a1" stroke="#07171f" stroke-width="1.5"/>
-  <rect x="100" y="388" width="120" height="80" fill="#fffaf0" stroke="#07171f" stroke-width="1.5"/>
-  <text x="68" y="416" fill="#07171f" font-weight="600">FOAM COLLAR</text>
-  <text x="68" y="432" fill="#5d7a8a">Phi200, h=80</text>
-  <text x="68" y="448" fill="#5d7a8a">~3 kg buoyancy</text>
-
-  <rect x="100" y="468" width="120" height="40" fill="#fffaf0" stroke="#07171f" stroke-width="1.5"/>
-  <text x="113" y="486" fill="#07171f" font-weight="600">CABLE GLANDS</text>
-  <text x="113" y="500" fill="#5d7a8a">PG9 x 3 (sensors)</text>
-  <text x="225" y="486" fill="#07171f">-270 mm</text>
-
-  <rect x="120" y="508" width="80" height="180" fill="none" stroke="#07171f" stroke-width="1.5" stroke-dasharray="3 3"/>
-  <text x="208" y="528" fill="#07171f">sensor stalk</text>
-  <text x="208" y="544" fill="#5d7a8a">(open, in water)</text>
-
-  <rect x="125" y="540" width="70" height="18" fill="#f4eee2" stroke="#a24b29"/>
-  <text x="128" y="554" fill="#a24b29">DS18B20 · TEMP</text>
-
-  <rect x="125" y="572" width="70" height="18" fill="#f4eee2" stroke="#2f7a8a"/>
-  <text x="128" y="586" fill="#2f7a8a">pH probe · 酸碱</text>
-
-  <rect x="125" y="604" width="70" height="18" fill="#f4eee2" stroke="#88a2b4"/>
-  <text x="128" y="618" fill="#1a4f6a">turbidity · 浊度</text>
-
-  <rect x="110" y="640" width="100" height="20" fill="#1a4f6a" stroke="#07171f" stroke-width="1.5"/>
-  <text x="120" y="654" fill="#f4eee2">LEAD BALLAST 500 g</text>
-  <text x="225" y="654" fill="#07171f">-450 mm</text>
-
-  <circle cx="160" cy="680" r="8" fill="none" stroke="#07171f" stroke-width="2"/>
-  <text x="180" y="685" fill="#07171f">anchor eye, rope down</text>
-
-  <line x1="160" y1="690" x2="160" y2="740" stroke="#07171f" stroke-width="1"/>
-  <line x1="155" y1="710" x2="165" y2="710" stroke="#07171f" stroke-width="1"/>
-  <line x1="155" y1="725" x2="165" y2="725" stroke="#07171f" stroke-width="1"/>
-  <text x="170" y="744" fill="#5d7a8a">~5 m line to anchor</text>
-</svg>
-```
-
-### 2.2 · Key dimensions
+### 2.1 · Key dimensions
 
 | Section          | Dim                | Note                       |
 | ---------------- | ------------------ | -------------------------- |
-| Total length     | 760 mm             | top of antenna to anchor eye |
-| Above waterline  | 350 mm             | dry bay + solar cap        |
-| Below waterline  | 410 mm             | foam collar + sensor stalk |
-| Body diameter    | Φ110 mm            | PVC DN100 pipe             |
-| Collar diameter  | Φ200 mm            | foam donut                 |
+| Total length     | 765 mm             | tip of antenna to anchor eye |
+| Above waterline  | 425 mm             | body + dome + spire        |
+| Below waterline  | 340 mm             | foam collar lower half + tail + probes |
+| Body OD          | Φ110 mm max, Φ102 mm at waist | tapered |
+| Body height      | 320 mm             | z = 0 → 320                |
+| Dome             | Φ121 base × 60 mm tall | clear acrylic hemisphere |
+| Foam collar      | Φ230 OD × Φ110 ID × 110 mm | rounded profile      |
+| Tail keel        | Φ110 → Φ56 × 280 mm | tapered cone               |
+| Sensor pod       | Φ56 × 50 mm        | dark grey                  |
 | Mass             | ~3.0 kg            | electronics + ballast      |
-| Buoyancy         | ~3.0 kg net        | foam displaces ~3.5 kg     |
 | Freeboard target | 80 mm              | dry bay always above water |
 
-### 2.3 · Material rationale
+### 2.2 · Material rationale
 
-- **PVC pipe** is the citizen-science gold standard: cheap, UV-stable
-  (white grade), easy to cut with a hacksaw, glues with PVC cement.
-- **Closed-cell foam** beats inflatable bladder — no leak failure mode.
-- **PG cable glands** rated IP68 keep water out at the sensor wires
-  without epoxy potting (you can still service the buoy later).
-- **Lead ballast** at the bottom keeps the buoy vertical even in
-  Shenzhen Bay's afternoon chop.
+- **Clear acrylic dome** keeps the solar panel weatherproof without
+  losing efficiency — the dome's transmittance at 350–1100 nm is ~92%.
+  The antenna can also live inside, protected from UV and impact.
+- **Tapered body** is more than aesthetic — the slight waist gives the
+  foam collar a positive grip surface and naturally locates the
+  waterline.
+- **Side hatch** instead of top hatch: you can service the electronics
+  in a small boat without dismounting the antenna or breaking the dome
+  seal.
+- **Closed-cell foam collar with rounded edges** sheds wave energy
+  better than a flat slab — less spray, less drift.
+- **Cast-in hi-viz band** is a durability play. Reflective tape peels
+  off in 6 months in salt water; pigment cast into the foam is good for
+  the life of the buoy.
+
+For the photoreal rendering of all of this geometry, see the three
+images at the top of this document or rebuild them yourself by running
+[`buoy-v1.blender.py`](./buoy-v1.blender.py).
 
 ---
 

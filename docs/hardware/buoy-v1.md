@@ -10,8 +10,14 @@ no PCB fab needed, no custom moulding. Target cost per unit: **~$220 USD**.
 > self-contained Blender script that rebuilds this whole assembly from
 > the dimensions below. Open Blender 4.x → Scripting workspace → Open →
 > Run, or from a shell: `blender --background --python docs/hardware/buoy-v1.blender.py`.
-> The script wires up materials, two cameras (hero + section), and a
-> waterline reference plane.
+> The script wires up materials, three cameras (hero / section / cutaway),
+> and a waterline reference plane. A ready-made [`buoy-v1.blend`](./buoy-v1.blend)
+> is also committed.
+
+| Hero | Section | Cutaway |
+| :--: | :--: | :--: |
+| ![hero](./renders/buoy-v1-hero.png) | ![section](./renders/buoy-v1-section.png) | ![cutaway](./renders/buoy-v1-cutaway.png) |
+| 3/4 view, full assembly | orthographic side, opaque | boolean-cut hull · electronics visible |
 
 ---
 

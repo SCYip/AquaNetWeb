@@ -54,3 +54,4 @@ credentials.json
 
 # Deploy scripts (server-side only, not for repo)
 deploy/
+*.blend1

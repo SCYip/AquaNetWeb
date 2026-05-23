@@ -55,3 +55,6 @@ credentials.json
 # Deploy scripts (server-side only, not for repo)
 deploy/
 *.blend1
+
+# Chrome MCP profile — contains cookies, session tokens, do NOT commit
+user_data/

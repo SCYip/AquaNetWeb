@@ -29,6 +29,25 @@ interface AliyunCreds {
   schemeName?: string;    // optional regulatory scheme
 }
 
+/**
+ * Hardcoded default signature 速通互联验证码 built from explicit codepoints.
+ *
+ * Why hardcoded? Supabase's Edge Function secrets vault mangles a specific
+ * Chinese byte sequence on save — the character 证 (U+8BC1, UTF-8 E8 AF 81)
+ * becomes three U+FFFD replacement characters. The other chars in
+ * 速通互联验证码 survive intact, so the stored value comes out as
+ * 速通互联验���码 (9 chars, 21 → 27 bytes). When you sign and send that to
+ * Aliyun, you get `isv.INVALID_PARAMETERS / 签名或者模版无效`.
+ *
+ * Workaround: build the string from explicit codepoints in source so it
+ * never round-trips through the secrets vault. If you later approve your
+ * own custom (ASCII) Aliyun signature, set ALIYUN_SMS_SIGN_NAME and we'll
+ * use that instead.
+ */
+const DEFAULT_SIGN_NAME = String.fromCodePoint(
+  0x901F, 0x901A, 0x4E92, 0x8054, 0x9A8C, 0x8BC1, 0x7801, // 速通互联验证码
+);
+
 export function loadAliyunCreds(): AliyunCreds {
   const get = (k: string): string => Deno.env.get(k)?.trim() ?? "";
   const required = (k: string): string => {
@@ -37,12 +56,17 @@ export function loadAliyunCreds(): AliyunCreds {
     return v;
   };
 
+  // Reject obviously corrupted signName from env (contains U+FFFD).
+  // See DEFAULT_SIGN_NAME comment above for context.
+  const envSign = get("ALIYUN_SMS_SIGN_NAME");
+  const signName = envSign && !envSign.includes("�") ? envSign : DEFAULT_SIGN_NAME;
+
   return {
     accessKeyId: required("ALIYUN_ACCESS_KEY_ID"),
     accessKeySecret: required("ALIYUN_ACCESS_KEY_SECRET"),
     endpoint: get("ALIYUN_ENDPOINT") || "dypnsapi.aliyuncs.com",
-    signName: required("ALIYUN_SMS_SIGN_NAME"),
-    templateCode: required("ALIYUN_SMS_TEMPLATE_CODE"),
+    signName,
+    templateCode: get("ALIYUN_SMS_TEMPLATE_CODE") || "100001",
     templateParam: get("ALIYUN_SMS_TEMPLATE_PARAM") || '{"code":"##code##","min":"5"}',
     codeType: Number(get("ALIYUN_SMS_CODE_TYPE")) || 1,
     codeLength: Number(get("ALIYUN_SMS_CODE_LENGTH")) || 6,
@@ -179,6 +203,42 @@ export interface AliyunResponse {
   };
 }
 
+/**
+ * Aliyun's raw HTTPS response uses PascalCase keys (Code/Message/Success/Model)
+ * while the official Node SDK transforms them to camelCase. We sign requests
+ * manually (no SDK in Deno), so we need to normalize PascalCase → camelCase
+ * ourselves.
+ */
+type RawAliyunResponse = {
+  Code?: string;       code?: string;
+  Message?: string;    message?: string;
+  Success?: boolean;   success?: boolean;
+  RequestId?: string;  requestId?: string;
+  Model?: {
+    VerifyResult?: string; verifyResult?: string;
+    RequestId?: string;    requestId?: string;
+    BizId?: string;        bizId?: string;
+  };
+  model?: AliyunResponse["model"];
+};
+
+function normalizeAliyunResponse(raw: RawAliyunResponse): AliyunResponse {
+  const rawModel = raw.Model ?? raw.model;
+  return {
+    code: raw.Code ?? raw.code,
+    message: raw.Message ?? raw.message,
+    success: raw.Success ?? raw.success,
+    requestId: raw.RequestId ?? raw.requestId,
+    model: rawModel
+      ? {
+          verifyResult: rawModel.VerifyResult ?? rawModel.verifyResult,
+          requestId: rawModel.RequestId ?? rawModel.requestId,
+          bizId: rawModel.BizId ?? rawModel.bizId,
+        }
+      : undefined,
+  };
+}
+
 export class AliyunError extends Error {
   code: string;
   status: number;
@@ -199,6 +259,9 @@ const FRIENDLY_MESSAGES: Record<string, (interval: number) => string> = {
   "MOBILE_NUMBER_ILLEGAL": () => "手机号格式不正确",
   "BUSINESS_LIMIT_CONTROL": () => "该号码今日发送次数已达上限",
   "INVALID_PARAMETERS": () => "请求参数无效，请检查签名与模板配置",
+  "isv.INVALID_PARAMETERS": () => "请求参数无效，请检查签名与模板配置",
+  "isv.ValidateFail": () => "验证码错误，请使用最新一条收到的验证码",
+  "isv.OUT_OF_SERVICE": () => "短信服务余额不足，请充值后再试",
   "FUNCTION_NOT_OPENED": () => "未开通号码认证/短信认证功能",
   "InternalError": () =>
     "阿里云短信服务异常，请检查号码认证控制台配置与 RAM 权限 (dypns:SendSmsVerifyCode)",
@@ -206,7 +269,15 @@ const FRIENDLY_MESSAGES: Record<string, (interval: number) => string> = {
 
 function httpStatusForCode(code: string): number {
   if (code === "biz.FREQUENCY" || code === "FREQUENCY_FAIL") return 429;
-  if (code === "MOBILE_NUMBER_ILLEGAL" || code === "INVALID_PARAMETERS") return 400;
+  if (
+    code === "MOBILE_NUMBER_ILLEGAL" ||
+    code === "INVALID_PARAMETERS" ||
+    code === "isv.INVALID_PARAMETERS"
+  ) {
+    return 400;
+  }
+  if (code === "isv.ValidateFail") return 401;
+  if (code === "isv.OUT_OF_SERVICE") return 503;
   if (code === "InternalError") return 502;
   return 500;
 }
@@ -231,9 +302,9 @@ async function callAliyun(
   });
 
   const text = await resp.text();
-  let body: AliyunResponse;
+  let raw: RawAliyunResponse;
   try {
-    body = JSON.parse(text);
+    raw = JSON.parse(text);
   } catch {
     throw new AliyunError(
       `Aliyun returned non-JSON (HTTP ${resp.status}): ${text.slice(0, 200)}`,
@@ -241,6 +312,9 @@ async function callAliyun(
       502,
     );
   }
+  // Aliyun's raw HTTPS response is PascalCase; normalize to the camelCase
+  // shape our higher-level code expects (matches the official Node SDK).
+  const body = normalizeAliyunResponse(raw);
 
   if (!body.success) {
     const code = body.code ?? "UNKNOWN";

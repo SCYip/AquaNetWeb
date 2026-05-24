@@ -98,24 +98,27 @@ Then:
 From the project root:
 
 ```bash
+# Minimum required — everything else has working defaults baked into the code.
 supabase secrets set \
   ALIYUN_ACCESS_KEY_ID="<from step 2>" \
-  ALIYUN_ACCESS_KEY_SECRET="<from step 2>" \
-  ALIYUN_ENDPOINT="dypnsapi.aliyuncs.com" \
-  ALIYUN_SMS_SIGN_NAME="速通互联验证码" \
-  ALIYUN_SMS_TEMPLATE_CODE="100001" \
-  ALIYUN_SMS_TEMPLATE_PARAM='{"code":"##code##","min":"5"}' \
-  ALIYUN_SMS_CODE_TYPE="1" \
-  ALIYUN_SMS_CODE_LENGTH="6" \
-  ALIYUN_SMS_VALID_TIME="300" \
-  ALIYUN_SMS_INTERVAL="60"
+  ALIYUN_ACCESS_KEY_SECRET="<from step 2>"
 ```
+
+That's it. The code defaults (in `_shared/aliyun.ts`) cover:
+
+| Var | Default | Notes |
+|---|---|---|
+| `ALIYUN_ENDPOINT` | `dypnsapi.aliyuncs.com` | |
+| `ALIYUN_SMS_SIGN_NAME` | `速通互联验证码` (hardcoded) | DO NOT set this to the Chinese value — Supabase mangles `证`. See "Known gotcha" below. Only set if you have an ASCII signature. |
+| `ALIYUN_SMS_TEMPLATE_CODE` | `100001` | Aliyun free login template |
+| `ALIYUN_SMS_TEMPLATE_PARAM` | `{"code":"##code##","min":"5"}` | Aliyun replaces `##code##` with the auto-generated OTP |
+| `ALIYUN_SMS_CODE_TYPE` | `1` | digits |
+| `ALIYUN_SMS_CODE_LENGTH` | `6` | |
+| `ALIYUN_SMS_VALID_TIME` | `300` | 5 minutes |
+| `ALIYUN_SMS_INTERVAL` | `60` | seconds between sends per phone |
 
 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_ANON_KEY` are
 provided automatically by Supabase to all Edge Functions — don't set them.
-
-For production, swap `ALIYUN_SMS_SIGN_NAME` and `ALIYUN_SMS_TEMPLATE_CODE`
-to your approved values.
 
 ## Deploy
 
@@ -152,9 +155,62 @@ curl -X POST https://<REF>.supabase.co/functions/v1/sms-verify \
 | `MOBILE_NUMBER_ILLEGAL` | Phone not 11-digit mainland | Frontend validates first — shouldn't happen |
 | `biz.FREQUENCY` | Same phone got a code <60s ago | Wait, then resend |
 | `BUSINESS_LIMIT_CONTROL` | Too many sends to this phone today | Aliyun caps at 5/day default |
-| `INVALID_PARAMETERS` | Wrong signName or templateCode | Check secrets |
+| `isv.INVALID_PARAMETERS` / 签名或者模版无效 | Wrong signName or templateCode | See "Known gotcha: Chinese signName" below |
+| `isv.ValidateFail` | Code typed didn't match | User mistyped or used an older code (only the **latest** SMS per phone is verifiable) |
+| `isv.OUT_OF_SERVICE` | Aliyun account balance hit ¥0 | Top up at <https://billing-cost.console.aliyun.com/fortune/fund-management/recharge> |
 | `FUNCTION_NOT_OPENED` | Dypnsapi not activated for this account | Step 3.1 above |
 | `InternalError` | Usually RAM perms or signature mismatch | Check policy + clock skew |
+
+## Known gotcha: Chinese signName via Supabase secrets
+
+If you store `ALIYUN_SMS_SIGN_NAME=速通互联验证码` in Supabase Edge Function
+secrets and read it via `Deno.env.get(...)`, you'll see this when you send:
+
+```
+{"Message":"签名或者模版无效","Code":"isv.INVALID_PARAMETERS","Success":false}
+```
+
+The Supabase secrets vault mangles the byte sequence for **`证` (U+8BC1,
+UTF-8 `E8 AF 81`)** into three U+FFFD replacement chars on save. Other
+characters in the same Unicode range survive — only `证` corrupts. The
+stored value comes back as `速通互联验���码` (9 chars, 3 invalid bytes).
+
+We work around this by **hardcoding** the signature in
+`_shared/aliyun.ts` using `String.fromCodePoint(...)`:
+
+```ts
+const DEFAULT_SIGN_NAME = String.fromCodePoint(
+  0x901F, 0x901A, 0x4E92, 0x8054, 0x9A8C, 0x8BC1, 0x7801,  // 速通互联验证码
+);
+```
+
+When `loadAliyunCreds()` finds an env value containing U+FFFD (i.e. the
+"corrupted" marker character), it falls back to `DEFAULT_SIGN_NAME`. If
+you later approve a custom **ASCII** signature on Aliyun (e.g. `AquaNet`),
+set `ALIYUN_SMS_SIGN_NAME=AquaNet` and the env value will be used as-is.
+
+## Known gotcha: PascalCase vs camelCase response keys
+
+Aliyun's **official Node SDK** (`@alicloud/dypnsapi20170525`) transforms
+response keys to camelCase (`success`, `code`, `model.verifyResult`).
+The **raw HTTPS response** uses PascalCase (`Success`, `Code`,
+`Model.VerifyResult`).
+
+Because Deno can't use the Node SDK, we sign requests by hand — and we
+get PascalCase responses. `_shared/aliyun.ts` includes
+`normalizeAliyunResponse()` which accepts either casing and emits the
+camelCase shape the rest of the code expects.
+
+## Known gotcha: dashboard editor is single-file
+
+Supabase's **dashboard code editor** does NOT resolve `../_shared/*.ts`
+imports — it deploys whatever's in the one file you're editing. If you
+edit & deploy from the dashboard, you must **inline** the shared helpers
+into `sms-send/index.ts` and `sms-verify/index.ts`.
+
+The CLI deploy path (`supabase functions deploy sms-send`) DOES resolve
+imports correctly, so the canonical source in this repo uses
+`../_shared/*.ts` imports. When pushing via CLI, no inlining needed.
 
 ## Future: deployment alerts + password resets
 

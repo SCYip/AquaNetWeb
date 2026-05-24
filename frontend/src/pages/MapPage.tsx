@@ -1,32 +1,18 @@
 import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet'
-import {
-  Loader2,
-  RefreshCw,
-  Thermometer,
-  Droplet,
-  Waves as WavesIcon,
-  Radio,
-} from 'lucide-react'
 import L from 'leaflet'
 import type { BuoyRow } from '../lib/types'
 import { getDeployedBuoys } from '../services/buoyService'
 import { ExportButton } from '../components/ExportButton'
 
 /* ────────────────────────────────────────────────────────────────────────────
- * MapPage — 实时地图 · LIVE FIELD MAP
+ * MapPage — AquaNet 水眸 · Live Map
  *
- * Field Bulletin treatment for the live buoy map. The map auto-fits to all
- * deployed buoys on load; each marker carries a permanent tooltip with its
- * name so the fleet is readable at a glance. Click a marker for a stationery
- * popup with full telemetry.
- *
- * Wheel scroll over the map zooms; outside it scrolls the page. We use
- * Leaflet's standard scrollWheelZoom (no custom momentum plugin) so the
- * wheel hand-off between map and page is reliable.
- *
- * Telemetry fields are nullable in the schema, so any missing reading is
- * rendered as an em-dash rather than "0".
+ * WIRED-discipline edition. A full-bleed ocean photo opens the page, three
+ * clean stats announce the fleet on canvas, a full-bleed Leaflet map sits
+ * between hairlines, and a simple three-cell legend explains how to read the
+ * marks. All Leaflet behaviour — buoy fetch, marker rendering, popup content,
+ * auto-fit bounds, 30s refresh — is preserved verbatim.
  * ──────────────────────────────────────────────────────────────────────────── */
 
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl
@@ -35,6 +21,8 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 })
+
+const HERO_IMG = 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=2400&q=80&auto=format&fit=crop'
 
 const SHENZHEN_CENTER: L.LatLngExpression = [22.5431, 114.0579]
 
@@ -81,13 +69,13 @@ function formatRelative(iso: string | null | undefined): string {
   const t = new Date(iso).getTime()
   if (Number.isNaN(t)) return '—'
   const seconds = Math.max(0, Math.floor((Date.now() - t) / 1000))
-  if (seconds < 60) return `${seconds}s ago · 刚刚`
+  if (seconds < 60) return `${seconds} 秒前`
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes} min ago · ${minutes} 分钟前`
+  if (minutes < 60) return `${minutes} 分钟前`
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} hr ago · ${hours} 小时前`
+  if (hours < 24) return `${hours} 小时前`
   const days = Math.floor(hours / 24)
-  return `${days}d ago · ${days} 天前`
+  return `${days} 天前`
 }
 
 export const MapPage = () => {
@@ -116,14 +104,20 @@ export const MapPage = () => {
     }
   }
 
+  const lastSyncTime = lastSync
+    ? lastSync.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    : '--:--:--'
+
   /* ── Loading ───────────────────────────────────────────────────────── */
   if (isLoading) {
     return (
-      <div className="bg-sand-50 bg-grain min-h-[80vh] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-7 h-7 animate-spin text-ocean-700" strokeWidth={1.6} />
-          <p className="mono-label text-ocean-600">CONNECTING · 正在接通海上节点</p>
-        </div>
+      <div>
+        <figure className="relative">
+          <img src={HERO_IMG} alt="" className="w-full h-[55vh] object-cover" loading="eager" />
+        </figure>
+        <section className="max-w-5xl mx-auto px-6 lg:px-10 py-20">
+          <p className="meta">正在接通海上节点。</p>
+        </section>
       </div>
     )
   }
@@ -131,226 +125,217 @@ export const MapPage = () => {
   /* ── Error ─────────────────────────────────────────────────────────── */
   if (error) {
     return (
-      <div className="bg-sand-50 bg-grain min-h-[80vh] flex items-center justify-center px-6">
-        <div className="border border-ocean-300 bg-white/70 backdrop-blur-sm p-10 max-w-md text-center">
-          <RefreshCw className="w-7 h-7 text-[#a24b29] mx-auto mb-4" strokeWidth={1.4} />
-          <p className="display-italic text-3xl text-ocean-950 mb-3">连不上水里。</p>
-          <p className="mono-label text-ocean-600 mb-6 leading-[1.7]">{error}</p>
-          <button
-            onClick={load}
-            className="border border-ocean-900 px-5 py-2 mono-label text-ocean-950 hover:bg-ocean-950 hover:text-sand-50 transition-colors"
-          >
-            RETRY · 重试
-          </button>
-        </div>
+      <div>
+        <figure className="relative">
+          <img src={HERO_IMG} alt="" className="w-full h-[55vh] object-cover" loading="eager" />
+        </figure>
+        <section className="max-w-5xl mx-auto px-6 lg:px-10 py-20">
+          <h1 className="font-display text-display text-ink">连不上水里。</h1>
+          <p className="font-body text-body text-mute mt-6 max-w-xl">{error}</p>
+          <button onClick={load} className="btn mt-8">再试一次</button>
+        </section>
       </div>
     )
   }
 
   /* ── Loaded ────────────────────────────────────────────────────────── */
   return (
-    <div className="bg-sand-50 text-ocean-950">
-      {/* ─── 00 · MASTHEAD ─────────────────────────────────────────────── */}
-      <header className="bg-grain bg-sand-50 border-b-[3px] border-double border-ocean-900/80">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-10 pb-14 md:pt-14 md:pb-20">
-          <div className="flex flex-wrap items-baseline justify-between gap-y-2 mono-label text-ocean-700 mb-12 md:mb-14 pb-3 border-b border-ocean-300/70">
-            <span>AQUANET 水眸 · 第一期 · ISSUE 01</span>
-            <span className="hidden sm:inline">FIELD MAP · 实时地图</span>
-            <span className="text-sea-700 inline-flex items-center gap-2">
-              <span className="live-dot" /> LIVE · {lastSync ? lastSync.toLocaleTimeString('en-GB') : '—'}
-            </span>
-          </div>
+    <div>
+      {/* ── HERO: full-bleed photo, no veil ──────────────────────────── */}
+      <figure className="relative">
+        <img
+          src={HERO_IMG}
+          alt=""
+          className="w-full h-[55vh] object-cover"
+          loading="eager"
+        />
+      </figure>
 
-          <div className="grid grid-cols-12 gap-y-10 md:gap-x-10 lg:gap-x-16">
-            <div className="col-span-12 lg:col-span-8">
-              <p className="section-eyebrow text-sea-700 mb-7">实时 · LIVE READINGS</p>
-              <h1 className="font-heading font-semibold text-ocean-950 leading-[0.95] tracking-tight text-[clamp(2.25rem,6vw,5rem)]">
-                <span className="display-italic text-sea-700">现在</span>，<br />
-                水里<span className="display-italic text-sand-700">在发生</span>什么。
-              </h1>
-              <div className="mt-10 flex items-center gap-4 mono-label text-ocean-600">
-                <span className="rule-fade w-12 text-ocean-400" />
-                <span>POLLING EVERY 30 s · 每三十秒同步</span>
-              </div>
+      {/* ── HEADLINE + STATS ─────────────────────────────────────────── */}
+      <section className="max-w-6xl mx-auto px-6 lg:px-10 pt-16 md:pt-24 pb-16 md:pb-20">
+        <h1 className="font-display text-hero text-ink max-w-4xl">
+          今天，水里的浮标正在说话。
+        </h1>
+        <p className="font-body text-lede text-ink mt-8 max-w-2xl">
+          一队浮标，每三十秒同步一次。点任意一个，看它当下的水温、酸碱度与浊度。
+        </p>
+
+        <div className="mt-14 pt-10 border-t border-line grid grid-cols-1 md:grid-cols-3 md:divide-x divide-line">
+          <div className="md:pr-10">
+            <div className="meta">Online</div>
+            <div className="font-display text-ink leading-none tnum mt-4" style={{ fontSize: 'clamp(2.5rem, 5vw, 4.5rem)' }}>
+              {String(buoys.length).padStart(2, '0')}
             </div>
-
-            <aside className="col-span-12 lg:col-span-4 lg:pl-8 lg:border-l lg:border-ocean-300/80 flex flex-col justify-end">
-              <div className="grid grid-cols-2 gap-x-6 gap-y-6 mb-8">
-                <div>
-                  <div className="mono-label text-ocean-500 mb-2">DEPLOYED</div>
-                  <div className="font-heading text-4xl text-ocean-950 tabular-nums">
-                    {String(buoys.length).padStart(2, '0')}
-                  </div>
-                  <div className="mono-label-sm text-ocean-600 mt-1">浮标在线</div>
-                </div>
-                <div>
-                  <div className="mono-label text-ocean-500 mb-2">LAST SYNC</div>
-                  <div className="font-heading text-2xl text-ocean-950">
-                    {lastSync ? lastSync.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '—'}
-                  </div>
-                  <div className="mono-label-sm text-ocean-600 mt-1">本次刷新</div>
-                </div>
-              </div>
-              <ExportButton variant="fleet" />
-            </aside>
+            <div className="font-body text-body text-mute mt-4">在线浮标</div>
+          </div>
+          <div className="mt-10 md:mt-0 pt-10 md:pt-0 border-t md:border-t-0 border-line md:px-10">
+            <div className="meta">Polling</div>
+            <div className="font-display text-ink leading-none tnum mt-4" style={{ fontSize: 'clamp(2.5rem, 5vw, 4.5rem)' }}>
+              30<span className="font-body text-lede text-mute ml-2">s</span>
+            </div>
+            <div className="font-body text-body text-mute mt-4">每三十秒拉一次</div>
+          </div>
+          <div className="mt-10 md:mt-0 pt-10 md:pt-0 border-t md:border-t-0 border-line md:pl-10">
+            <div className="meta flex items-center gap-2">
+              Last sync
+              <span
+                aria-hidden
+                className="inline-block w-1.5 h-1.5 rounded-full bg-link"
+                title="live"
+              />
+            </div>
+            <div className="font-display text-ink leading-none tnum mt-4" style={{ fontSize: 'clamp(2.5rem, 5vw, 4.5rem)' }}>
+              {lastSyncTime}
+            </div>
+            <div className="font-body text-body text-mute mt-4">最近一次同步</div>
           </div>
         </div>
-      </header>
 
-      {/* ─── §01 · MAP ──────────────────────────────────────────────────── */}
-      <section className="bg-sand-50 bg-grain reveal">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-14 md:py-20">
-          <div className="flex flex-wrap items-baseline justify-between gap-y-2 mb-8 pb-4 border-b border-ocean-200">
-            <h2 className="section-eyebrow text-ocean-900">01 · 现场 · ON THE WATER</h2>
-            <span className="mono-label text-ocean-500">
-              CLICK A BUOY · 点击浮标查看
-            </span>
+        <div className="mt-10">
+          <ExportButton variant="fleet" />
+        </div>
+      </section>
+
+      {/* ── FULL-BLEED MAP between hairlines ─────────────────────────── */}
+      <section className="border-y border-line">
+        <MapContainer
+          center={SHENZHEN_CENTER}
+          zoom={11}
+          minZoom={8}
+          maxZoom={18}
+          zoomSnap={0.25}
+          zoomDelta={0.5}
+          className="h-[68vh] min-h-[480px] w-full"
+          zoomControl
+          scrollWheelZoom
+          wheelDebounceTime={20}
+          wheelPxPerZoomLevel={80}
+          dragging
+          inertia
+          doubleClickZoom
+          touchZoom
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          />
+
+          <FitBoundsToBuoys buoys={buoys} />
+
+          {buoys.map((b) =>
+            b.lat !== null && b.lng !== null ? (
+              <Marker key={b.id} position={[b.lat, b.lng]} icon={buoyIcon}>
+                <Tooltip
+                  direction="top"
+                  offset={[0, -16]}
+                  opacity={1}
+                  permanent
+                  className="aq-tooltip"
+                >
+                  <span className="aq-tooltip__name">{b.name}</span>
+                  <span className="aq-tooltip__code">{b.code || b.id.slice(0, 8)}</span>
+                </Tooltip>
+                <Popup className="aq-popup" maxWidth={360} minWidth={320}>
+                  <div className="aq-popup-inner">
+                    <div className="aq-popup__head">
+                      <span className="aq-popup__kicker">浮标</span>
+                      <span className="aq-popup__code">
+                        {b.code || b.id.slice(0, 8)}
+                      </span>
+                    </div>
+
+                    <h3 className="aq-popup__name">{b.name}</h3>
+                    <p className="aq-popup__coords">
+                      {b.lat?.toFixed(4)}°N · {b.lng?.toFixed(4)}°E
+                    </p>
+
+                    <dl className="aq-popup__readings">
+                      <Reading
+                        label="水温"
+                        sub="TEMP"
+                        value={fmt(b.temp, 1)}
+                        unit="°C"
+                      />
+                      <Reading
+                        label="酸碱度"
+                        sub="PH"
+                        value={fmt(b.ph, 2)}
+                      />
+                      <Reading
+                        label="浊度"
+                        sub="TURB"
+                        value={fmt(b.turbidity, 1)}
+                        unit="NTU"
+                        warn={b.turbidity !== null && Number(b.turbidity) > 15}
+                      />
+                    </dl>
+
+                    <div className="aq-popup__updated">
+                      <span>上次更新</span>
+                      <span className="aq-popup__updated-val">
+                        {formatRelative(b.updated_at)}
+                      </span>
+                    </div>
+
+                    <div className="aq-popup__actions">
+                      <ExportButton
+                        variant="single"
+                        buoy={b}
+                        size="sm"
+                        className="w-full justify-center"
+                      />
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            ) : null,
+          )}
+        </MapContainer>
+      </section>
+
+      {/* ── LEGEND: three-cell explainer on canvas ───────────────────── */}
+      <section className="border-b border-line">
+        <div className="max-w-6xl mx-auto px-6 lg:px-10 py-20 md:py-24 grid grid-cols-1 md:grid-cols-3 md:divide-x divide-line">
+          <div className="md:pr-10">
+            <div className="flex items-center gap-3">
+              <span className="aq-pin" style={{ width: 22, height: 22 }}>
+                <span className="aq-pin__halo" />
+                <span className="aq-pin__dot" />
+              </span>
+              <div className="meta">每一个点</div>
+            </div>
+            <h3 className="font-display text-subhead text-ink mt-5">一个真实的传感器</h3>
+            <p className="font-body text-body text-mute mt-4">
+              每个圆点是一只浮标，就在水里漂着。点击它，看到水温、酸碱度和浊度——它现在告诉我们的话。
+            </p>
           </div>
 
-          <div className="relative border-[1.5px] border-ocean-900/80 shadow-[0_28px_60px_-32px_rgba(8,32,52,0.5)]">
-            <span aria-hidden className="absolute -top-2 -left-2 w-4 h-4 border-l-2 border-t-2 border-ocean-900 z-[401]" />
-            <span aria-hidden className="absolute -top-2 -right-2 w-4 h-4 border-r-2 border-t-2 border-ocean-900 z-[401]" />
-            <span aria-hidden className="absolute -bottom-2 -left-2 w-4 h-4 border-l-2 border-b-2 border-ocean-900 z-[401]" />
-            <span aria-hidden className="absolute -bottom-2 -right-2 w-4 h-4 border-r-2 border-b-2 border-ocean-900 z-[401]" />
-
-            <MapContainer
-              center={SHENZHEN_CENTER}
-              zoom={11}
-              minZoom={8}
-              maxZoom={18}
-              zoomSnap={0.25}
-              zoomDelta={0.5}
-              className="h-[68vh] min-h-[480px] w-full"
-              zoomControl
-              scrollWheelZoom
-              wheelDebounceTime={20}
-              wheelPxPerZoomLevel={80}
-              dragging
-              inertia
-              doubleClickZoom
-              touchZoom
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-              />
-
-              <FitBoundsToBuoys buoys={buoys} />
-
-              {buoys.map((b) =>
-                b.lat !== null && b.lng !== null ? (
-                  <Marker key={b.id} position={[b.lat, b.lng]} icon={buoyIcon}>
-                    <Tooltip
-                      direction="top"
-                      offset={[0, -16]}
-                      opacity={1}
-                      permanent
-                      className="aq-tooltip"
-                    >
-                      <span className="aq-tooltip__name">{b.name}</span>
-                      <span className="aq-tooltip__code">{b.code || b.id.slice(0, 8)}</span>
-                    </Tooltip>
-                    <Popup className="aq-popup" maxWidth={360} minWidth={320}>
-                      <div className="aq-popup-inner">
-                        {/* Header strip — full-width row, code on its own line */}
-                        <div className="aq-popup__head">
-                          <span className="aq-popup__kicker">
-                            <Radio className="w-3 h-3" strokeWidth={2.2} />
-                            BUOY · 浮标
-                          </span>
-                          <span className="aq-popup__code">
-                            {b.code || b.id.slice(0, 8)}
-                          </span>
-                        </div>
-
-                        {/* Title block */}
-                        <h3 className="aq-popup__name">{b.name}</h3>
-                        <p className="aq-popup__coords">
-                          {b.lat?.toFixed(4)}°N · {b.lng?.toFixed(4)}°E
-                        </p>
-
-                        {/* Telemetry — fixed grid, never wraps */}
-                        <dl className="aq-popup__readings">
-                          <Reading
-                            icon={<Thermometer className="w-3.5 h-3.5" strokeWidth={1.8} />}
-                            label="水温"
-                            sub="TEMP"
-                            value={fmt(b.temp, 1)}
-                            unit="°C"
-                          />
-                          <Reading
-                            icon={<Droplet className="w-3.5 h-3.5" strokeWidth={1.8} />}
-                            label="酸碱度"
-                            sub="pH"
-                            value={fmt(b.ph, 2)}
-                          />
-                          <Reading
-                            icon={<WavesIcon className="w-3.5 h-3.5" strokeWidth={1.8} />}
-                            label="浊度"
-                            sub="TURB"
-                            value={fmt(b.turbidity, 1)}
-                            unit="NTU"
-                            warn={b.turbidity !== null && Number(b.turbidity) > 15}
-                          />
-                        </dl>
-
-                        {/* Last updated — single row */}
-                        <div className="aq-popup__updated">
-                          <span>LAST UPDATED · 上次更新</span>
-                          <span className="aq-popup__updated-val">
-                            {formatRelative(b.updated_at)}
-                          </span>
-                        </div>
-
-                        {/* Action — single button, full width */}
-                        <div className="aq-popup__actions">
-                          <ExportButton
-                            variant="single"
-                            buoy={b}
-                            size="sm"
-                            className="w-full justify-center"
-                          />
-                        </div>
-                      </div>
-                    </Popup>
-                  </Marker>
-                ) : null,
-              )}
-            </MapContainer>
+          <div className="mt-10 md:mt-0 pt-10 md:pt-0 border-t md:border-t-0 border-line md:px-10">
+            <div className="meta">同步频率</div>
+            <h3 className="font-display text-subhead text-ink mt-5">
+              每 <span className="tnum">30</span> 秒
+            </h3>
+            <p className="font-body text-body text-mute mt-4">
+              数据每三十秒自动同步一次。右上角的下载按钮可以把整队浮标当下的状态打包成 CSV。
+            </p>
           </div>
 
-          {/* ── Legend / colophon ── */}
-          <div className="mt-10 grid grid-cols-12 gap-y-8 md:gap-x-10">
-            <div className="col-span-12 md:col-span-4">
-              <p className="mono-label text-ocean-700 mb-3">— 图例 · LEGEND</p>
-              <ul className="space-y-3 text-ocean-800">
-                <li className="flex items-center gap-3">
-                  <span className="aq-pin aq-pin--inline"><span className="aq-pin__halo" /><span className="aq-pin__dot" /></span>
-                  <span className="text-sm">活跃浮标 · LIVE BUOY</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <span className="w-3 h-3 rounded-full bg-[#a24b29]" />
-                  <span className="text-sm">浊度 &gt; 15 NTU 视为异常 · ELEVATED TURBIDITY</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="col-span-12 md:col-span-4">
-              <p className="mono-label text-ocean-700 mb-3">— 阅读 · HOW TO READ</p>
-              <p className="font-body text-[0.95rem] text-ocean-700 leading-[1.7]">
-                每个圆点是一个真实的传感器，<span className="display-italic text-sea-700">就在水里漂着</span>。
-                点击它，看到水温、酸碱度和浊度——这是它现在告诉我们的话。
-              </p>
-            </div>
-
-            <div className="col-span-12 md:col-span-4">
-              <p className="mono-label text-ocean-700 mb-3">— 同步 · SYNC</p>
-              <p className="font-body text-[0.95rem] text-ocean-700 leading-[1.7]">
-                数据每三十秒拉一次。下载按钮把整队浮标当下的状态打包成 CSV，
-                <span className="display-italic text-sand-700">带着走</span>。
-              </p>
-            </div>
+          <div className="mt-10 md:mt-0 pt-10 md:pt-0 border-t md:border-t-0 border-line md:pl-10">
+            <div className="meta">阈值</div>
+            <h3 className="font-display text-subhead text-ink mt-5">
+              浊度 &gt; <span className="tnum">15</span> NTU
+            </h3>
+            <p className="font-body text-body text-mute mt-4">
+              超过阈值的读数会被特别标出，提醒你这一处值得多看一眼。其他指标暂以原始数值呈现。
+            </p>
           </div>
+        </div>
+
+        <div className="max-w-6xl mx-auto px-6 lg:px-10 py-6 border-t border-line flex flex-wrap items-center justify-between gap-3">
+          <span className="meta tnum">Last refresh · {lastSyncTime}</span>
+          <button type="button" onClick={load} className="btn-outline" aria-label="刷新地图数据">
+            刷新
+          </button>
         </div>
       </section>
     </div>
@@ -360,7 +345,6 @@ export const MapPage = () => {
 /* ── Telemetry row ───────────────────────────────────────────────────── */
 
 interface ReadingProps {
-  icon: React.ReactNode
   label: string
   sub: string
   value: string
@@ -368,9 +352,8 @@ interface ReadingProps {
   warn?: boolean
 }
 
-const Reading = ({ icon, label, sub, value, unit, warn }: ReadingProps) => (
+const Reading = ({ label, sub, value, unit, warn }: ReadingProps) => (
   <div className={`aq-reading ${warn ? 'aq-reading--warn' : ''}`}>
-    <span className="aq-reading__icon">{icon}</span>
     <span className="aq-reading__label">
       <span className="aq-reading__zh">{label}</span>
       <span className="aq-reading__en">{sub}</span>

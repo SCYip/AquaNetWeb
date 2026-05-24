@@ -1,25 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import {
-  Mail,
-  Lock,
-  User,
-  AlertCircle,
-  Loader2,
-  ArrowRight,
-  Smartphone,
-  KeyRound,
-} from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 /* ────────────────────────────────────────────────────────────────────────────
- * LoginPage — 入口 · STAFF ENTRANCE
+ * LoginPage — WIRED-discipline edition.
  *
- * Editorial sign-in page for AquaNet. Two channels share the same card:
- *   - 邮箱 · EMAIL   → Supabase email+password (built-in)
- *   - 手机 · PHONE   → Aliyun Dypnsapi SMS code via Edge Functions
- * Both paths end with a real Supabase session — RLS treats them
- * identically.
+ * The form IS the page. No photo hero, no veils, no decorative tags.
+ * Two channels share the same restrained frame:
+ *   - EMAIL  → Supabase email+password
+ *   - PHONE  → Aliyun Dypnsapi SMS code via Edge Functions
+ * Auth logic preserved verbatim.
  * ──────────────────────────────────────────────────────────────────────────── */
 
 type Channel = 'email' | 'phone'
@@ -33,42 +23,37 @@ export const LoginPage = () => {
 
   const [channel, setChannel] = useState<Channel>('email')
 
-  // Email branch state ----------------------------------------------------
-  const [mode, setMode] = useState<EmailMode>('login')
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
+  // Email branch
+  const [mode, setMode]         = useState<EmailMode>('login')
+  const [name, setName]         = useState('')
+  const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
 
-  // Phone branch state ----------------------------------------------------
-  const [phone, setPhone] = useState('')
-  const [code, setCode] = useState('')
-  const [codeSent, setCodeSent] = useState(false)
-  const [cooldown, setCooldown] = useState(0) // seconds until resend allowed
+  // Phone branch
+  const [phone, setPhone]             = useState('')
+  const [code, setCode]               = useState('')
+  const [codeSent, setCodeSent]       = useState(false)
+  const [cooldown, setCooldown]       = useState(0)
   const [sendingCode, setSendingCode] = useState(false)
-  const [phoneName, setPhoneName] = useState('') // optional name for new signups
+  const [phoneName, setPhoneName]     = useState('')
 
-  // Shared state ----------------------------------------------------------
-  const [error, setError] = useState<string | null>(null)
-  const [info, setInfo] = useState<string | null>(null)
+  // Shared
+  const [error, setError]       = useState<string | null>(null)
+  const [info, setInfo]         = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  // Countdown timer for SMS resend
+  // Cooldown timer
   const tickRef = useRef<number | null>(null)
   useEffect(() => {
     if (cooldown <= 0) {
       if (tickRef.current) window.clearTimeout(tickRef.current)
       return
     }
-    tickRef.current = window.setTimeout(() => setCooldown((c) => c - 1), 1000)
-    return () => {
-      if (tickRef.current) window.clearTimeout(tickRef.current)
-    }
+    tickRef.current = window.setTimeout(() => setCooldown(c => c - 1), 1000)
+    return () => { if (tickRef.current) window.clearTimeout(tickRef.current) }
   }, [cooldown])
 
-  const reset = () => {
-    setError(null)
-    setInfo(null)
-  }
+  const reset = () => { setError(null); setInfo(null) }
 
   const switchChannel = (c: Channel) => {
     if (c === channel) return
@@ -76,7 +61,7 @@ export const LoginPage = () => {
     reset()
   }
 
-  // ─── Email branch submit ───────────────────────────────────────────────
+  // ─── Email branch submit ─────────────────────────────────────────────
   const onEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     reset()
@@ -98,7 +83,7 @@ export const LoginPage = () => {
     }
   }
 
-  // ─── Phone branch: send code ───────────────────────────────────────────
+  // ─── Phone branch: send code ────────────────────────────────────────
   const onSendCode = async () => {
     reset()
     if (!MAINLAND_PHONE_RE.test(phone)) {
@@ -118,7 +103,7 @@ export const LoginPage = () => {
     }
   }
 
-  // ─── Phone branch: submit code ─────────────────────────────────────────
+  // ─── Phone branch: verify ───────────────────────────────────────────
   const onPhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     reset()
@@ -141,182 +126,139 @@ export const LoginPage = () => {
     }
   }
 
-  // ─── Render ────────────────────────────────────────────────────────────
+  // ─── Render ─────────────────────────────────────────────────────────
   return (
-    <div className="bg-sand-50 bg-grain min-h-[88vh] text-ocean-950 flex items-center justify-center px-6 py-16">
-      <div className="w-full max-w-xl">
-        <div className="flex flex-wrap items-baseline justify-between gap-y-2 mono-label text-ocean-700 mb-8 pb-3 border-b border-ocean-300/70">
-          <span>AQUANET 水眸 · 第一期 · ISSUE 01</span>
-          <span className="text-sea-700">登录 · STAFF ENTRANCE</span>
+    <div className="bg-canvas">
+      <section className="max-w-2xl mx-auto px-6 lg:px-10 py-20 md:py-28">
+        {/* Headline — Fraunces, no italic on CJK */}
+        <h1 className="font-display text-display text-ink">
+          登录
+        </h1>
+
+        {/* Mode strip — eyebrow left, mute toggle right */}
+        <div className="mt-10 flex items-baseline justify-between border-b border-line pb-4">
+          <span className="eyebrow">
+            {channel === 'phone'
+              ? '短信通道'
+              : mode === 'login'
+              ? '邮箱登录'
+              : '邮箱注册'}
+          </span>
+          {channel === 'email' && (
+            <button
+              type="button"
+              onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); reset() }}
+              className="meta hover:text-ink transition-colors"
+            >
+              {mode === 'login' ? '切换到注册 →' : '← 切换到登录'}
+            </button>
+          )}
+          {channel === 'phone' && codeSent && (
+            <span className="meta">验证码已发送</span>
+          )}
         </div>
 
-        <p className="section-eyebrow text-sea-700 mb-5">
-          {channel === 'email' && mode === 'register'
-            ? '加入 · JOIN THE TEAM'
-            : '回来 · WELCOME BACK'}
-        </p>
-        <h1 className="font-heading font-semibold text-ocean-950 leading-[0.98] tracking-tight text-[clamp(2rem,5.2vw,3.6rem)] mb-4">
-          {channel === 'phone' ? (
-            <>
-              用<span className="display-italic text-sea-700">手机号</span>登录。
-            </>
-          ) : mode === 'login' ? (
-            <>
-              请<span className="display-italic text-sea-700">报上你的</span>名字。
-            </>
-          ) : (
-            <>
-              <span className="display-italic text-sand-700">第一次</span>来。
-            </>
-          )}
-        </h1>
-        <p className="font-body text-ocean-700 leading-[1.7] max-w-prose mb-10">
-          {channel === 'phone'
-            ? '我们用短信发一次性验证码。第一次用，会自动给你建好账号。'
-            : mode === 'login'
-            ? '登录后，你能管理自己认领的浮标、查看你的设备，下载属于你那片水域的数据。'
-            : '注册之后，你就拥有自己的设备页和一组属于自己的认领码。'}
-        </p>
+        {/* Channel tabs — plain text with ink underline on active */}
+        <div className="mt-8 flex gap-8">
+          <ChannelTab
+            active={channel === 'email'}
+            onClick={() => switchChannel('email')}
+            label="EMAIL"
+          />
+          <ChannelTab
+            active={channel === 'phone'}
+            onClick={() => switchChannel('phone')}
+            label="PHONE"
+          />
+        </div>
 
-        <div className="border-[1.5px] border-ocean-900/80 bg-white/70 backdrop-blur-sm shadow-[0_24px_60px_-30px_rgba(8,32,52,0.4)]">
-          {/* Channel tabs ------------------------------------------------- */}
-          <div className="flex border-b border-ocean-900/80">
-            <ChannelTab
-              active={channel === 'email'}
-              onClick={() => switchChannel('email')}
-              icon={<Mail className="w-3.5 h-3.5" strokeWidth={1.8} />}
-              label="邮箱 · EMAIL"
-            />
-            <ChannelTab
-              active={channel === 'phone'}
-              onClick={() => switchChannel('phone')}
-              icon={<Smartphone className="w-3.5 h-3.5" strokeWidth={1.8} />}
-              label="手机 · PHONE"
-            />
-          </div>
-
-          {/* Mode strip (email branch) ----------------------------------- */}
-          {channel === 'email' && (
-            <div className="border-b border-ocean-200 px-7 py-5 flex items-center justify-between">
-              <div className="mono-label text-ocean-700">
-                {mode === 'login' ? '01 · 登录 · SIGN IN' : '01 · 注册 · CREATE ACCOUNT'}
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setMode(mode === 'login' ? 'register' : 'login')
-                  reset()
-                }}
-                className="mono-label-sm text-sea-700 hover:text-ocean-950 inline-flex items-center gap-1 transition-colors"
-              >
-                {mode === 'login' ? '切换到注册' : '切换到登录'}
-                <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
-          )}
-
-          {channel === 'phone' && (
-            <div className="border-b border-ocean-200 px-7 py-5 mono-label text-ocean-700">
-              01 · 登录 / 注册 · SIGN IN OR REGISTER
-            </div>
-          )}
-
-          {/* ─── Forms ─── */}
+        {/* Form body */}
+        <div className="mt-12">
           {channel === 'email' ? (
-            <form onSubmit={onEmailSubmit} className="px-7 py-7 space-y-6">
+            <form onSubmit={onEmailSubmit} className="space-y-8">
               <AlertBox error={error} info={info} />
 
               {mode === 'register' && (
-                <Field
-                  label="姓名 · NAME"
-                  hint="可以是真名，也可以是大家在群里叫你的"
-                  icon={<User className="w-4 h-4" strokeWidth={1.8} />}
-                >
+                <Field id="name" label="姓名">
                   <input
+                    id="name"
                     type="text"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={e => setName(e.target.value)}
                     placeholder="陈水眸"
                     autoComplete="name"
                     disabled={submitting}
-                    className="aq-input"
+                    aria-label="姓名"
+                    className="field"
                   />
                 </Field>
               )}
 
-              <Field
-                label="邮箱 · EMAIL"
-                hint="我们用这个发系统消息，比如认领提醒"
-                icon={<Mail className="w-4 h-4" strokeWidth={1.8} />}
-              >
+              <Field id="email" label="邮箱">
                 <input
+                  id="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={e => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   autoComplete="email"
                   required
                   disabled={submitting}
-                  className="aq-input"
+                  aria-label="邮箱"
+                  className="field"
                 />
               </Field>
 
-              <Field
-                label="密码 · PASSWORD"
-                hint={mode === 'register' ? '至少 6 位，请别用生日' : ''}
-                icon={<Lock className="w-4 h-4" strokeWidth={1.8} />}
-              >
+              <Field id="password" label="密码">
                 <input
+                  id="password"
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
                   autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                   required
                   minLength={6}
                   disabled={submitting}
-                  className="aq-input"
+                  aria-label="密码"
+                  className="field"
                 />
               </Field>
 
-              <SubmitButton
-                submitting={submitting}
-                submittingLabel={mode === 'login' ? 'SIGNING IN · 登录中' : 'CREATING · 注册中'}
-                idleLabel={mode === 'login' ? 'SIGN IN · 登录' : 'CREATE ACCOUNT · 创建账号'}
-              />
+              <SubmitButton submitting={submitting}>
+                {mode === 'login' ? '登录' : '创建账号'}
+              </SubmitButton>
             </form>
           ) : (
-            <form onSubmit={onPhoneSubmit} className="px-7 py-7 space-y-6">
+            <form onSubmit={onPhoneSubmit} className="space-y-8">
               <AlertBox error={error} info={info} />
 
-              <Field
-                label="手机号 · PHONE"
-                hint="只支持中国大陆 +86 号码"
-                icon={<Smartphone className="w-4 h-4" strokeWidth={1.8} />}
-              >
-                <div className="flex gap-2">
+              <Field id="phone" label="手机号">
+                <div className="flex items-end gap-4">
                   <input
+                    id="phone"
                     type="tel"
-                    inputMode="numeric"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                    onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
                     placeholder="13800000000"
                     autoComplete="tel"
-                    maxLength={11}
+                    inputMode="numeric"
+                    pattern="1[3-9]\d{9}"
                     required
                     disabled={submitting}
-                    className="aq-input flex-1"
+                    aria-label="手机号"
+                    className="field flex-1 tnum"
                   />
                   <button
                     type="button"
                     onClick={onSendCode}
                     disabled={sendingCode || cooldown > 0 || !MAINLAND_PHONE_RE.test(phone)}
-                    className="px-5 mono-label-sm border border-ocean-900/80 text-ocean-950 hover:bg-ocean-950 hover:text-sand-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                    className="meta hover:text-ink transition-colors whitespace-nowrap pb-3 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {sendingCode
                       ? '发送中…'
                       : cooldown > 0
-                      ? `${cooldown}s 后重试`
+                      ? `${cooldown}s 后重发`
                       : codeSent
                       ? '重新发送'
                       : '发送验证码'}
@@ -324,164 +266,120 @@ export const LoginPage = () => {
                 </div>
               </Field>
 
-              <Field
-                label="验证码 · CODE"
-                hint="收到的 6 位数字"
-                icon={<KeyRound className="w-4 h-4" strokeWidth={1.8} />}
-              >
+              <Field id="code" label="验证码">
                 <input
+                  id="code"
                   type="text"
-                  inputMode="numeric"
                   value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                  onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
                   placeholder="••••••"
+                  inputMode="numeric"
                   autoComplete="one-time-code"
-                  maxLength={8}
                   required
-                  disabled={submitting || !codeSent}
-                  className="aq-input tabular-nums tracking-[0.4em]"
+                  disabled={submitting}
+                  aria-label="验证码"
+                  className="field tnum font-meta text-2xl tracking-[0.5em] text-center"
                 />
               </Field>
 
-              <Field
-                label="姓名 · NAME"
-                hint="第一次登录可以填，老用户留空即可"
-                icon={<User className="w-4 h-4" strokeWidth={1.8} />}
-              >
+              <Field id="phone-name" label="姓名（选填）">
                 <input
+                  id="phone-name"
                   type="text"
                   value={phoneName}
-                  onChange={(e) => setPhoneName(e.target.value)}
+                  onChange={e => setPhoneName(e.target.value)}
                   placeholder="可以留空"
                   autoComplete="name"
                   disabled={submitting}
-                  className="aq-input"
+                  aria-label="姓名（选填）"
+                  className="field"
                 />
               </Field>
 
-              <SubmitButton
-                submitting={submitting}
-                submittingLabel="VERIFYING · 验证中"
-                idleLabel="SIGN IN · 登录"
-              />
+              <SubmitButton submitting={submitting}>
+                登录
+              </SubmitButton>
             </form>
           )}
         </div>
 
-        <p className="mt-10 font-body text-sm text-ocean-600 leading-[1.8]">
-          {channel === 'email' ? (
-            <>
-              忘了密码？暂时还没接通自助找回——先{' '}
-              <Link
-                to="/contact"
-                className="border-b border-ocean-400 pb-px hover:text-ocean-950 hover:border-ocean-900 transition-colors"
-              >
-                联系我们
-              </Link>
-              ，我们手动帮你重置。或者直接用手机号登录。
-            </>
-          ) : (
-            <>
-              收不到短信？检查一下手机号有没有拼错，或者{' '}
-              <Link
-                to="/contact"
-                className="border-b border-ocean-400 pb-px hover:text-ocean-950 hover:border-ocean-900 transition-colors"
-              >
-                联系我们
-              </Link>
-              。
-            </>
-          )}
+        {/* Footer — quiet help link */}
+        <p className="mt-16 pt-6 border-t border-line flex items-baseline justify-between">
+          <span className="meta">收不到短信？账号有问题？</span>
+          <Link to="/contact" className="meta hover:text-ink transition-colors">
+            写信给我们 ↗
+          </Link>
         </p>
-      </div>
+      </section>
     </div>
   )
 }
 
-/* ── Channel tab ─────────────────────────────────────────────────────── */
+/* ── Subcomponents ─────────────────────────────────────────────────── */
 
-interface ChannelTabProps {
+function ChannelTab({ active, onClick, label }: {
   active: boolean
   onClick: () => void
-  icon: React.ReactNode
   label: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`pb-3 border-b-2 transition-colors ${
+        active
+          ? 'border-ink text-ink'
+          : 'border-transparent text-mute hover:text-ink'
+      }`}
+    >
+      <span className="eyebrow">{label}</span>
+    </button>
+  )
 }
 
-const ChannelTab = ({ active, onClick, icon, label }: ChannelTabProps) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={[
-      'flex-1 py-4 px-5 mono-label inline-flex items-center justify-center gap-2 transition-colors',
-      active
-        ? 'bg-ocean-950 text-sand-50'
-        : 'bg-transparent text-ocean-600 hover:text-ocean-950 hover:bg-ocean-50',
-    ].join(' ')}
-    aria-pressed={active}
-  >
-    {icon}
-    <span>{label}</span>
-  </button>
-)
-
-/* ── Alert / info row ─────────────────────────────────────────────────── */
-
-const AlertBox = ({ error, info }: { error: string | null; info: string | null }) => (
-  <>
-    {error && (
-      <div className="border border-[#a24b29] bg-[#fbe9e1] text-[#7a3119] p-4 flex gap-3 items-start">
-        <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" strokeWidth={1.8} />
-        <div className="font-body text-sm leading-snug">{error}</div>
-      </div>
-    )}
-    {info && (
-      <div className="border border-sea-300 bg-sea-50 text-sea-700 p-4 mono-label-sm leading-relaxed">
-        {info}
-      </div>
-    )}
-  </>
-)
-
-/* ── Submit button ────────────────────────────────────────────────────── */
-
-const SubmitButton = ({
-  submitting,
-  submittingLabel,
-  idleLabel,
-}: {
-  submitting: boolean
-  submittingLabel: string
-  idleLabel: string
-}) => (
-  <button
-    type="submit"
-    disabled={submitting}
-    className="w-full bg-ocean-950 text-sand-50 mono-label py-4 hover:bg-sea-700 disabled:bg-ocean-700 disabled:cursor-wait transition-colors flex items-center justify-center gap-2"
-  >
-    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-    <span>{submitting ? submittingLabel : idleLabel}</span>
-  </button>
-)
-
-/* ── Editorial input field with mono label + helper hint ─────────────── */
-
-interface FieldProps {
+function Field({ id, label, children }: {
+  id: string
   label: string
-  hint?: string
-  icon?: React.ReactNode
   children: React.ReactNode
+}) {
+  return (
+    <div className="space-y-2">
+      <label htmlFor={id} className="meta block">
+        {label}
+      </label>
+      {children}
+    </div>
+  )
 }
 
-const Field = ({ label, hint, icon, children }: FieldProps) => (
-  <label className="block">
-    <div className="flex items-baseline justify-between mb-2">
-      <span className="mono-label text-ocean-700 inline-flex items-center gap-1.5">
-        {icon}
-        {label}
-      </span>
-      {hint && <span className="mono-label-sm text-ocean-400 hidden sm:inline">{hint}</span>}
+function AlertBox({ error, info }: { error: string | null; info: string | null }) {
+  if (!error && !info) return null
+  const isError = !!error
+  return (
+    <div
+      role={isError ? 'alert' : 'status'}
+      className={
+        isError
+          ? 'border border-link bg-link/5 text-ink p-4'
+          : 'border border-line bg-canvas text-ink p-4'
+      }
+    >
+      <div className="text-body leading-snug">{error ?? info}</div>
     </div>
-    {children}
-    {hint && <span className="mono-label-sm text-ocean-400 sm:hidden block mt-1.5">{hint}</span>}
-  </label>
-)
+  )
+}
+
+function SubmitButton({ submitting, children }: {
+  submitting: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="submit"
+      disabled={submitting}
+      className="btn w-full disabled:opacity-40 disabled:cursor-not-allowed"
+    >
+      {submitting ? '处理中…' : children}
+    </button>
+  )
+}

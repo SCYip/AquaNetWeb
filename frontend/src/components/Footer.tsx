@@ -1,57 +1,45 @@
 import { Link } from 'react-router-dom'
 
 export const Footer = () => {
-  const currentYear = new Date().getFullYear()
+  const year = new Date().getFullYear()
 
   return (
-    <footer className="bg-ocean-900 text-ocean-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-          <div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-9 h-9 rounded-full bg-sea-500 flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"/>
-                  <path d="M8 12h4l2-4 2 8 2-4h0"/>
-                </svg>
-              </div>
-              <span className="font-heading text-lg font-bold text-white">AquaNet 水眸</span>
-            </div>
-            <p className="text-sm text-ocean-400 leading-relaxed max-w-xs">
-              一个由高中生发起的公民科学项目，用科技与社群的力量共同守护身边的水环境。
-            </p>
-          </div>
+    <footer className="bg-ink text-canvas mt-32">
+      <div className="max-w-6xl mx-auto px-6 lg:px-10 py-16 grid grid-cols-12 gap-y-10 md:gap-x-10">
+        <div className="col-span-12 md:col-span-6">
+          <Link to="/" className="font-display text-3xl text-canvas leading-none">
+            AquaNet <span className="italic">水眸</span>
+          </Link>
+          <p className="mt-5 max-w-md text-canvas/75 leading-relaxed">
+            一份用开源浮标、公开地图、公众来信组成的公民观测站。
+          </p>
+        </div>
 
-          <div>
-            <h4 className="font-heading text-sm font-semibold text-white uppercase tracking-wider mb-4">快速链接</h4>
-            <div className="space-y-2">
-              {[
-                { to: '/', label: '首页' },
-                { to: '/about', label: '关于我们' },
-                { to: '/map', label: '实时地图' },
-                { to: '/contact', label: '联系我们' },
-              ].map(link => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className="block text-sm text-ocean-400 hover:text-sea-400 transition-colors"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-          </div>
+        <div className="col-span-6 md:col-span-3 space-y-3">
+          {[
+            { to: '/',         label: '首页'  },
+            { to: '/about',    label: '关于'  },
+            { to: '/map',      label: '实时地图' },
+            { to: '/contact',  label: '联系'  },
+          ].map(link => (
+            <Link key={link.to} to={link.to} className="block text-canvas/80 hover:text-canvas transition-colors">
+              {link.label}
+            </Link>
+          ))}
+        </div>
 
-          <div>
-            <h4 className="font-heading text-sm font-semibold text-white uppercase tracking-wider mb-4">关于项目</h4>
-            <p className="text-sm text-ocean-400 leading-relaxed">
-              从一个旁观者，变成"公民科学家"。<br />
-              守护水环境，从"看见"开始。
-            </p>
-            <p className="text-xs text-ocean-500 mt-4">
-              © {currentYear} AquaNet 水眸 · 公民科学项目
-            </p>
-          </div>
+        <div className="col-span-6 md:col-span-3 space-y-1">
+          <div className="meta text-canvas/60">编辑部</div>
+          <div className="text-canvas">深圳</div>
+          <a href="mailto:contact@aquanet.io" className="text-canvas/80 hover:text-canvas transition-colors block mt-2">
+            contact@aquanet.io
+          </a>
+        </div>
+      </div>
+
+      <div className="border-t border-canvas/15">
+        <div className="max-w-6xl mx-auto px-6 lg:px-10 py-5 meta text-canvas/55">
+          © {year} AquaNet 水眸
         </div>
       </div>
     </footer>

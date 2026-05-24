@@ -1,567 +1,270 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;1,9..144,400&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Serif+SC:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+/* ──────────────────────────────────────────────────────────────────────
+ * AquaNet 水眸 — minimal globals.
+ * Only the bones the system relies on. Components live inline in pages.
+ * ────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --canvas: #ffffff;
+  --ink:    #1a1a1a;
+  --mute:   #6e6e73;
+  --line:   #d2d2d7;
+  --link:   #0a4d8c;
+}
 
 @layer base {
+  *, *::before, *::after {
+    border-color: var(--line);
+  }
+
   html {
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: 'IBM Plex Serif', 'Noto Serif SC', Georgia, serif;
+    color: var(--ink);
+    background: var(--canvas);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
     scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-sand-50 text-ocean-950;
+    background: var(--canvas);
+    color: var(--ink);
+    min-height: 100vh;
   }
 
-  h1, h2, h3, h4 {
-    font-family: 'Playfair Display', Georgia, serif;
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Fraunces', 'IBM Plex Serif', Georgia, serif;
+    font-weight: 400;
+    color: var(--ink);
+    letter-spacing: -0.012em;
   }
+
+  ::selection {
+    background: var(--ink);
+    color: var(--canvas);
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  input, textarea, select, button {
+    font-family: inherit;
+    color: inherit;
+  }
+
+  .tnum { font-variant-numeric: tabular-nums; }
 }
 
+/* ──────────────────────────────────────────────────────────────────────
+ * Two utility classes only. Anything more lives at the page level.
+ * ────────────────────────────────────────────────────────────────────── */
 @layer components {
-  .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 px-8 py-3
-      bg-sea-600 hover:bg-sea-500 text-white font-semibold
-      rounded-full transition-all duration-200
-      shadow-md hover:shadow-lg hover:-translate-y-0.5;
+
+  /* Mono metadata label — tracked, defined gray */
+  .meta {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: var(--mute);
+    font-variant-numeric: tabular-nums;
   }
 
-  .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 px-8 py-3
-      bg-transparent border-2 border-ocean-600 text-ocean-700
-      font-semibold rounded-full transition-all duration-200
-      hover:bg-ocean-600 hover:text-white hover:border-ocean-600;
+  /* Tracked uppercase eyebrow — for section kickers, BLACK ink */
+  .eyebrow {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink);
   }
 
-  .btn-dark {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3
-      bg-ocean-800 hover:bg-ocean-700 text-white
-      font-semibold rounded-xl transition-colors;
+  /* Single button style: rectangle, ink on canvas. Hover → link blue. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.95rem 1.6rem;
+    background: var(--ink);
+    color: var(--canvas);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    border: 1px solid var(--ink);
+    border-radius: 0;
+    cursor: pointer;
+    transition: background 150ms ease;
+  }
+  .btn:hover, .btn:focus-visible { background: var(--link); border-color: var(--link); }
+
+  .btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.95rem 1.6rem;
+    background: transparent;
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    border: 1px solid var(--ink);
+    border-radius: 0;
+    cursor: pointer;
+    transition: background 150ms ease, color 150ms ease;
+  }
+  .btn-outline:hover, .btn-outline:focus-visible { background: var(--ink); color: var(--canvas); }
+
+  /* Bare-underline input */
+  .field {
+    width: 100%;
+    padding: 0.85rem 0;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+    font-family: 'IBM Plex Serif', Georgia, serif;
+    font-size: 1.0625rem;
+    outline: none;
+    transition: border-color 150ms ease;
+  }
+  .field::placeholder { color: var(--mute); }
+  .field:focus { border-bottom-color: var(--ink); }
+
+  /* ── Editorial primitives — the kind real magazines use ──────────── */
+
+  /* Magazine drop cap. Sits on the first paragraph of body copy.
+     The first letter floats four lines tall, in display serif. */
+  .dropcap::first-letter {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 400;
+    float: left;
+    font-size: 5.5rem;
+    line-height: 0.85;
+    margin: 0.25rem 0.75rem 0 0;
+    color: var(--ink);
   }
 
-  .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2
-      text-ocean-700 font-medium rounded-lg
-      transition-colors hover:bg-ocean-100;
+  /* Pull quote — breaks out of the body column with a serif voice,
+     ruled top + bottom with hairlines. */
+  .pullquote {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 400;
+    font-size: clamp(1.5rem, 2.4vw, 2.25rem);
+    line-height: 1.15;
+    letter-spacing: -0.012em;
+    color: var(--ink);
+    border-top: 1px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+    padding: 1.75rem 0;
+    margin: 2.5rem 0;
   }
 
-  .card {
-    @apply bg-white rounded-2xl shadow-card border border-ocean-100/60
-      p-8 flex flex-col items-center text-center;
+  /* Caption — small italic serif under photographs, with mono credit. */
+  .caption {
+    font-family: 'IBM Plex Serif', Georgia, serif;
+    font-style: italic;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: var(--mute);
+    max-width: 36em;
+  }
+  .caption-credit {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--mute);
+    margin-top: 0.5rem;
+    display: block;
+    font-style: normal;
   }
 
-  .card-hover {
-    @apply bg-white rounded-2xl shadow-card border border-ocean-100/60
-      p-8 flex flex-col items-center text-center
-      transition-all duration-300 hover:shadow-lifted hover:-translate-y-1;
+  /* Issue masthead — small printed chrome that lives at the top edge of
+     a page. Like "AQUANET 水眸 · NO. I · 卷首 · PAGE 03" on a real magazine. */
+  .masthead-strip {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink);
+    border-bottom: 1px solid var(--ink);
   }
 
-  .section-label {
-    @apply inline-block text-xs font-bold uppercase tracking-widest
-      text-sea-600 mb-4;
+  /* Roman numeral section marker — for "I." / "II." / "III." spreads. */
+  .section-numeral {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 400;
+    font-style: italic;
+    font-size: clamp(3.5rem, 6vw, 5.5rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--ink);
   }
 
-  .input-field {
-    @apply w-full px-4 py-3 border border-ocean-200 rounded-xl
-      bg-white text-ocean-900 placeholder-ocean-400
-      transition-all duration-200
-      focus:outline-none focus:ring-2 focus:ring-sea-400 focus:border-sea-400;
+  /* Body column — real magazine reading rhythm */
+  .article-body {
+    font-family: 'IBM Plex Serif', 'Noto Serif SC', Georgia, serif;
+    font-size: 1.125rem;
+    line-height: 1.75;
+    color: var(--ink);
   }
+  .article-body p + p { margin-top: 1.25rem; }
 }
 
-/* Leaflet container — sized by the page, no rounding (the editorial frame
- * around it does the visual work). Background uses the sand paper tone so
- * tile load gaps blend with the rest of the page. */
+/* ──────────────────────────────────────────────────────────────────────
+ * Leaflet — pure black on white, no chrome decoration
+ * ────────────────────────────────────────────────────────────────────── */
 .leaflet-container {
   width: 100%;
-  background: #f4eee2;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  background: var(--canvas);
+  font-family: 'IBM Plex Serif', Georgia, serif;
+}
+.leaflet-container a { color: var(--link) !important; text-decoration: underline; }
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--canvas);
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--ink);
+}
+.leaflet-popup-content { margin: 12px 16px; font-size: 0.9375rem; }
+.leaflet-control-zoom a {
+  background: var(--canvas) !important;
+  color: var(--ink) !important;
+  border-color: var(--ink) !important;
+  border-radius: 0 !important;
+}
+.leaflet-control-zoom a:hover { background: var(--ink) !important; color: var(--canvas) !important; }
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.9) !important;
+  font-family: 'IBM Plex Mono', monospace !important;
+  font-size: 0.6875rem !important;
+  letter-spacing: 0.04em;
+  color: var(--mute) !important;
 }
 
-/* — Buoy pin marker (used by L.divIcon HTML in MapPage) — */
+/* Buoy marker pin — pure black, no halo decoration */
 .aq-pin {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 24px;
+  height: 24px;
 }
-.aq-pin--inline {
-  width: 22px;
-  height: 22px;
-}
-.aq-pin__halo {
-  position: absolute;
-  inset: 0;
-  border-radius: 9999px;
-  background: rgba(50, 144, 126, 0.20);
-  animation: aq-halo 2.4s ease-out infinite;
-}
-.aq-pin--inline .aq-pin__halo { animation: none; }
+.aq-pin__halo { display: none; }
 .aq-pin__dot {
-  position: relative;
-  width: 14px;
-  height: 14px;
-  border-radius: 9999px;
-  background: #1a4f6a;
-  border: 2px solid #f4eee2;
-  box-shadow:
-    0 0 0 1.5px #0c2740,
-    0 4px 10px rgba(8, 24, 40, 0.35);
-}
-.aq-pin--inline .aq-pin__dot {
-  width: 9px;
-  height: 9px;
-  border-width: 1.5px;
-}
-@keyframes aq-halo {
-  0%   { transform: scale(0.7); opacity: 0.7; }
-  70%  { transform: scale(1.6); opacity: 0; }
-  100% { transform: scale(1.6); opacity: 0; }
-}
-
-/* — Popup override → editorial paper card — */
-.leaflet-popup.aq-popup .leaflet-popup-content-wrapper {
-  background: #f4eee2;
-  color: #07171f;
-  border: 1px solid #082034;
-  border-radius: 0;
-  box-shadow:
-    0 18px 36px -16px rgba(8, 24, 40, 0.45),
-    0 4px 8px rgba(8, 24, 40, 0.10);
-  padding: 0;
-}
-.leaflet-popup.aq-popup .leaflet-popup-content {
-  margin: 0;
-  width: auto !important;
-}
-.leaflet-popup.aq-popup .leaflet-popup-tip {
-  background: #f4eee2;
-  border: 1px solid #082034;
-  box-shadow: none;
-}
-.leaflet-popup.aq-popup .leaflet-popup-close-button {
-  color: #082034;
-  font-size: 18px;
-  padding: 6px 8px;
-}
-/* ── Popup card · stacked editorial layout ─────────────────────────── */
-.aq-popup-inner {
-  padding: 18px 20px 18px;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  color: #07171f;
-  min-width: 280px;
-}
-
-.aq-popup__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #c7d3dc;             /* ocean-200 */
-  margin-bottom: 14px;
-}
-.aq-popup__kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: 'JetBrains Mono', Menlo, monospace;
-  font-size: 0.66rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #2f7a8a;                               /* sea-700 */
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.aq-popup__code {
-  font-family: 'JetBrains Mono', Menlo, monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.05em;
-  color: #5d7a8a;                               /* ocean-500 */
-  font-feature-settings: 'tnum' 1;
-  white-space: nowrap;
-  text-align: right;
-}
-
-.aq-popup__name {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-weight: 600;
-  font-size: 1.45rem;
-  line-height: 1.15;
-  color: #07171f;
-  margin: 0 0 4px;
-}
-.aq-popup__coords {
-  font-family: 'JetBrains Mono', Menlo, monospace;
-  font-size: 0.68rem;
-  letter-spacing: 0.05em;
-  color: #5d7a8a;
-  margin: 0 0 16px;
-  font-feature-settings: 'tnum' 1;
-}
-
-.aq-popup__readings {
-  margin: 0 0 14px;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  border-top: 1px solid #c7d3dc;
-  padding-top: 14px;
-}
-
-.aq-reading {
-  display: grid;
-  grid-template-columns: 18px 1fr auto;
-  align-items: center;
-  gap: 10px;
-}
-.aq-reading__icon {
-  color: #1a4f6a;                               /* ocean-800 */
-  display: inline-flex;
-  align-items: center;
-}
-.aq-reading--warn .aq-reading__icon { color: #a24b29; }
-
-.aq-reading__label {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-}
-.aq-reading__zh {
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: 0.92rem;
-  color: #1a4f6a;
-  white-space: nowrap;
-}
-.aq-reading__en {
-  font-family: 'JetBrains Mono', Menlo, monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #88a2b4;                               /* ocean-300 */
-  white-space: nowrap;
-}
-
-.aq-reading__value {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-weight: 600;
-  font-size: 1.25rem;
-  color: #07171f;
-  font-feature-settings: 'tnum' 1;
-  white-space: nowrap;
-  text-align: right;
-}
-.aq-reading--warn .aq-reading__value { color: #a24b29; }
-.aq-reading__unit {
-  font-family: 'JetBrains Mono', Menlo, monospace;
-  font-size: 0.65rem;
-  letter-spacing: 0.08em;
-  color: #5d7a8a;
-  margin-left: 4px;
-  font-weight: 500;
-}
-.aq-reading--warn .aq-reading__unit { color: #a24b29; }
-
-.aq-popup__updated {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 0;
-  border-top: 1px solid #c7d3dc;
-  border-bottom: 1px solid #c7d3dc;
-  margin-bottom: 14px;
-  font-family: 'JetBrains Mono', Menlo, monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #5d7a8a;
-}
-.aq-popup__updated-val {
-  color: #1a4f6a;
-  white-space: nowrap;
-}
-
-.aq-popup__actions { display: block; }
-.aq-popup__actions button { width: 100%; }
-
-/* — Permanent marker tooltip → little stationery tag floating above pin — */
-.leaflet-tooltip.aq-tooltip {
-  background: #f4eee2;
-  color: #07171f;
-  border: 1px solid #082034;
-  border-radius: 0;
-  box-shadow: 0 8px 20px -10px rgba(8, 24, 40, 0.45);
-  padding: 6px 10px;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: 0.78rem;
-  line-height: 1.15;
-  white-space: nowrap;
-  pointer-events: none;
-}
-.leaflet-tooltip.aq-tooltip::before {
-  border-top-color: #082034;
-}
-.aq-tooltip__name {
-  display: block;
-  font-family: 'Playfair Display', Georgia, serif;
-  font-weight: 600;
-  font-size: 0.92rem;
-  color: #07171f;
-  letter-spacing: 0.005em;
-}
-.aq-tooltip__code {
-  display: block;
-  font-family: 'JetBrains Mono', Menlo, monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #4a8a9d;
-  margin-top: 2px;
-}
-
-/* — Editorial input · used by LoginPage / DevicesPage forms — */
-.aq-input {
-  width: 100%;
-  background: transparent;
-  border: 0;
-  border-bottom: 1.5px solid #4a8a9d;     /* ocean-500 */
-  padding: 0.65rem 0.25rem;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: 1rem;
-  color: #07171f;                          /* ocean-950 */
-  letter-spacing: 0.01em;
-  transition: border-color 200ms ease, background 200ms ease;
-}
-.aq-input::placeholder {
-  color: #88a2b4;                          /* ocean-300 */
-  font-style: italic;
-}
-.aq-input:focus {
-  outline: none;
-  border-bottom-color: #082034;            /* ocean-900 */
-  background: rgba(255, 255, 255, 0.5);
-}
-.aq-input:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-/* — Inverted underline input for dark sections (DevicesPage CLAIM block) — */
-.aq-input-dark {
-  width: 100%;
-  background: transparent;
-  border: 0;
-  border-bottom: 1.5px solid rgba(125, 212, 186, 0.5);  /* sea-300 @ 50% */
-  padding: 0.65rem 0.25rem;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: 1rem;
-  color: #f4eee2;                                       /* sand-50 */
-  letter-spacing: 0.01em;
-  transition: border-color 200ms ease;
-}
-.aq-input-dark::placeholder {
-  color: rgba(125, 212, 186, 0.55);                     /* sea-300 muted */
-  font-style: italic;
-}
-.aq-input-dark:focus {
-  outline: none;
-  border-bottom-color: #a8e7d2;                         /* sea-200 */
-}
-.aq-input-dark:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* — Long-form article body, used by DispatchesPage — */
-.prose-aquanet {
-  font-family: 'DM Sans', system-ui, sans-serif;
-  color: #1a4f6a;
-  font-size: 1.05rem;
-  line-height: 1.95;
-  max-width: 64ch;
-}
-.prose-aquanet p { margin-bottom: 1.25rem; }
-.prose-aquanet em,
-.prose-aquanet i {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-style: italic;
-  color: #0d3450;
-}
-
-/* ============================================================
- * Editorial / Field Bulletin design tokens
- * Used by HomePage. Built on the existing Tailwind palette
- * (ocean / sea / sand). Other pages keep their own classes.
- * ============================================================ */
-
-/* — Cross-page native morph transitions (Chrome/Safari/FF 133+) — */
-@view-transition { navigation: auto; }
-
-/* — Paper grain overlay — adds tactility to flat sand/sea backgrounds — */
-.bg-grain { position: relative; isolation: isolate; }
-.bg-grain::before {
-  content: '';
-  position: absolute; inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.05 0 0 0 0 0.18 0 0 0 0 0.25 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 220px 220px;
-  opacity: 0.55;
-  mix-blend-mode: multiply;
-}
-
-/* — Monospaced technical label (mono-label) — */
-.mono-label {
-  font-family: 'JetBrains Mono', Menlo, monospace;
-  font-size: 0.68rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  font-weight: 500;
-  font-feature-settings: 'tnum' 1, 'zero' 1;
-}
-.mono-label-sm {
-  font-family: 'JetBrains Mono', Menlo, monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-/* — Section eyebrow with pseudo-§ glyph — */
-.section-eyebrow {
-  font-family: 'JetBrains Mono', Menlo, monospace;
-  font-size: 0.72rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.5rem;
-}
-.section-eyebrow::before {
-  content: '§';
-  font-family: 'Playfair Display', Georgia, serif;
-  font-style: italic;
-  font-weight: 400;
-  font-size: 1.25em;
-  line-height: 1;
-  transform: translateY(0.05em);
-}
-
-/* — Editorial italic display, used for pull quotes & key phrases — */
-.display-italic {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-style: italic;
-  font-weight: 500;
-}
-
-/* — Live ticker dot — */
-.live-dot {
-  display: inline-block;
-  width: 0.5rem; height: 0.5rem;
-  border-radius: 9999px;
-  background: #4fc09c;            /* sea-400 */
-  box-shadow: 0 0 0 0 rgba(79, 192, 156, 0.55);
-  animation: live-pulse 1.8s ease-out infinite;
-}
-@keyframes live-pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(79, 192, 156, 0.55); }
-  70%  { box-shadow: 0 0 0 10px rgba(79, 192, 156, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(79, 192, 156, 0); }
-}
-
-/* — Field bulletin data block (replaces the gradient map rectangle) — */
-.bulletin-card {
-  background:
-    radial-gradient(1200px 400px at 8% 92%, rgba(79, 192, 156, 0.18), transparent 55%),
-    radial-gradient(900px 480px at 92% 8%,  rgba(53, 155, 192, 0.18), transparent 55%),
-    linear-gradient(135deg, #0b2533 0%, #1a4f6a 55%, #1b3f3a 100%);
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-/* faint coordinate grid overlay — Bedrock-inspired radar/coords motif */
-.bulletin-card::before {
-  content: '';
-  position: absolute; inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse at 50% 50%, black 50%, transparent 90%);
-  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, black 50%, transparent 90%);
-}
-.bulletin-card > * { position: relative; z-index: 1; }
-
-/* — Hairline rule with tapered terminal — */
-.rule-fade {
-  height: 1px;
-  background: linear-gradient(to right, currentColor 0%, currentColor 65%, transparent 100%);
-}
-
-/* — Drop-cap for editorial paragraphs — */
-.drop-cap::first-letter {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-style: italic;
-  font-weight: 500;
-  font-size: 4.5rem;
-  line-height: 0.9;
-  float: left;
-  padding-right: 0.6rem;
-  padding-top: 0.3rem;
-  color: #1a4f6a;       /* ocean-800 */
-}
-
-/* — Numbered editorial column header (No. 01) — */
-.column-numeral {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-style: italic;
-  font-weight: 500;
-  line-height: 0.85;
-  font-size: clamp(3.5rem, 7vw, 5.5rem);
-  letter-spacing: -0.02em;
-}
-
-/* — Scroll-driven reveal — only when supported (Chrome 115+, FF 140+, Safari 26+) — */
-@supports (animation-timeline: view()) {
-  .reveal {
-    animation: reveal-rise linear both;
-    animation-timeline: view();
-    animation-range: entry 0% entry 55%;
-  }
-  @keyframes reveal-rise {
-    from { opacity: 0; transform: translateY(36px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-}
-/* Older browsers: just be visible. Don't fake it. */
-
-/* — Bathymetry decorative SVG color helper — */
-.text-bathy { color: rgba(125, 212, 186, 0.45); }   /* sea-300 @ ~45% */
-
-
-/* Wave divider */
-.wave-divider {
-  position: relative;
-  overflow: hidden;
-}
-.wave-divider::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  right: 0;
-  height: 48px;
-  background: currentColor;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z' fill='%23ffffff' opacity='.5'/%3E%3Cpath d='M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z' fill='%23ffffff' opacity='.75'/%3E%3Cpath d='M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.23-20.12,254.9-39.32C1288.82,28,1313.69,47,1350,49.63V0Z' fill='%23ffffff'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z' fill='%23ffffff' opacity='.5'/%3E%3Cpath d='M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z' fill='%23ffffff' opacity='.75'/%3E%3Cpath d='M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.23-20.12,254.9-39.32C1288.82,28,1313.69,47,1350,49.63V0Z' fill='%23ffffff'/%3E%3C/svg%3E");
-  background-size: 200% 100%;
-  -webkit-mask-size: cover;
-  mask-size: cover;
+  width: 12px;
+  height: 12px;
+  background: var(--ink);
+  border: 2px solid var(--canvas);
+  outline: 1px solid var(--ink);
+  border-radius: 50%;
 }

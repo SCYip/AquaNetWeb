@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ArrowUpRight, Loader2, AlertCircle } from 'lucide-react'
 import type { Dispatch } from '../lib/types'
 import { listDispatches } from '../services/dispatchService'
 
 /* ────────────────────────────────────────────────────────────────────────────
- * DispatchesPage — 团队手记 · FIELD DISPATCHES
+ * DispatchesPage — AquaNet 水眸 · Team Notes
  *
- * Long-form team notes from the AquaNet 水眸 crew. Read-only public view.
- * Each dispatch reads as its own magazine feature: author byline, dateline,
- * big italic title, body with drop-cap on the first paragraph.
+ * WIRED-discipline edition. A full-bleed river photo opens the page, the
+ * latest dispatch sits in a full-bleed ink slab, and the rest run as a hairline-
+ * divided archive of (date · title · author) rows. All fetch logic is preserved
+ * verbatim. Dispatch model: { id, title, body, author_name, published_at }.
  * ──────────────────────────────────────────────────────────────────────────── */
 
-function formatDate(iso: string): string {
+const HERO_IMG = 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=2400&q=80&auto=format&fit=crop'
+
+function formatDateZh(iso: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return iso
   return d.toLocaleDateString('zh-CN', {
@@ -50,166 +51,141 @@ export const DispatchesPage = () => {
     }
   }, [])
 
+  const [featured, ...rest] = dispatches
+
   return (
-    <div className="bg-sand-50 text-ocean-950">
-      {/* ─── 00 · MASTHEAD ──────────────────────────────────────────────── */}
-      <header className="bg-grain bg-sand-50 border-b-[3px] border-double border-ocean-900/80">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-10 pb-20 md:pt-14 md:pb-24">
-          <div className="flex flex-wrap items-baseline justify-between gap-y-2 mono-label text-ocean-700 mb-12 md:mb-16 pb-3 border-b border-ocean-300/70">
-            <span>AQUANET 水眸 · 第一期 · ISSUE 01</span>
-            <span className="hidden sm:inline">FROM THE TEAM · 团队栏</span>
-            <span className="text-sea-700">团队手记 · DISPATCHES</span>
+    <div>
+      {/* ── HERO: full-bleed photo, no veil ──────────────────────────── */}
+      <figure className="relative">
+        <img
+          src={HERO_IMG}
+          alt=""
+          className="w-full h-[55vh] object-cover"
+          loading="eager"
+        />
+      </figure>
+
+      {/* ── HEADLINE + LEDE ──────────────────────────────────────────── */}
+      <section className="max-w-5xl mx-auto px-6 lg:px-10 pt-16 md:pt-24 pb-20 md:pb-28">
+        <h1 className="font-display text-hero text-ink">团队手记</h1>
+        <p className="font-body text-lede text-ink mt-8 max-w-2xl">
+          只发已经发生过的事——观测、走访、修缮、修电路。不写预想、不写宣言。下一篇等下一次出海。
+        </p>
+      </section>
+
+      {/* ── STATES: LOADING / ERROR / EMPTY ──────────────────────────── */}
+      {loading && (
+        <section className="border-t border-line">
+          <div className="max-w-6xl mx-auto px-6 lg:px-10 py-24">
+            <p className="meta">读取手记中。</p>
           </div>
+        </section>
+      )}
 
-          <div className="grid grid-cols-12 gap-y-10 md:gap-x-10 lg:gap-x-16">
-            <div className="col-span-12 lg:col-span-8">
-              <p className="section-eyebrow text-sea-700 mb-7">手记 · DISPATCHES</p>
-              <h1 className="font-heading font-semibold text-ocean-950 leading-[0.95] tracking-tight text-[clamp(2.25rem,6vw,5rem)]">
-                我们<span className="display-italic text-sea-700">在水边</span>
-                <br />
-                <span className="display-italic text-sand-700">看见的</span>。
-              </h1>
-              <div className="mt-10 flex items-center gap-4 mono-label text-ocean-600">
-                <span className="rule-fade w-12 text-ocean-400" />
-                FIELD NOTES · 田野手记
-              </div>
+      {!loading && error && (
+        <section className="border-t border-line" role="alert">
+          <div className="max-w-6xl mx-auto px-6 lg:px-10 py-20">
+            <h2 className="font-display text-display text-ink">读不到手记。</h2>
+            <div className="border border-ink mt-6 px-5 py-4 max-w-xl">
+              <div className="meta text-ink mb-1">错误</div>
+              <p className="font-body text-body text-ink">{error}</p>
             </div>
+          </div>
+        </section>
+      )}
 
-            <aside className="col-span-12 lg:col-span-4 lg:pl-8 lg:border-l lg:border-ocean-300/80 flex flex-col justify-end">
-              <div className="mono-label text-ocean-600 mb-4">EDITOR&apos;S NOTE · 编者按</div>
-              <p className="font-body text-base md:text-lg text-ocean-800 leading-[1.7]">
-                每次部署、每次联调、每条让我们想停下来记一笔的事——
-                <span className="font-semibold text-ocean-950">慢慢攒成这一栏。</span>
-              </p>
-              <div className="mt-7 pt-5 border-t border-ocean-200/80 mono-label-sm text-ocean-500 leading-[1.9]">
-                Long-form notes from
-                <br />
-                the people doing the work
-                <br />
-                at the water&apos;s edge.
+      {!loading && !error && dispatches.length === 0 && (
+        <section className="border-t border-line">
+          <div className="max-w-5xl mx-auto px-6 lg:px-10 py-24 md:py-32">
+            <p className="font-display text-display text-ink">还没有手记。</p>
+          </div>
+        </section>
+      )}
+
+      {/* ── FEATURED — latest dispatch as full-bleed ink slab ────────── */}
+      {!loading && !error && featured && (
+        <section className="bg-ink text-canvas">
+          <div className="max-w-6xl mx-auto px-6 lg:px-10 py-24 md:py-32 grid grid-cols-12 gap-y-10 md:gap-x-10">
+            <aside className="col-span-12 md:col-span-3">
+              <div className="font-meta text-meta uppercase tracking-[0.06em] text-canvas/70 tnum">
+                {formatDateEn(featured.published_at)}
+              </div>
+              <div className="font-meta text-meta uppercase tracking-[0.06em] text-canvas/70 mt-2">
+                {formatDateZh(featured.published_at)}
+              </div>
+              <div className="font-meta text-meta uppercase tracking-[0.06em] text-canvas mt-8 pt-6 border-t border-canvas/30">
+                {featured.author_name}
               </div>
             </aside>
+
+            <div className="col-span-12 md:col-span-9">
+              <h2 className="font-display text-canvas leading-[1.05]" style={{ fontSize: 'clamp(2.25rem, 5vw, 4rem)' }}>
+                {featured.title}
+              </h2>
+
+              <div className="mt-10 max-w-2xl">
+                {featured.body.split(/\n{2,}/).map((para, j) => (
+                  <p
+                    key={j}
+                    className={`font-body text-body text-canvas leading-[1.85] whitespace-pre-line ${
+                      j > 0 ? 'mt-6' : ''
+                    }`}
+                  >
+                    {para}
+                  </p>
+                ))}
+              </div>
+
+              <p className="font-meta text-meta uppercase tracking-[0.06em] text-canvas/70 mt-12 tnum">
+                {featured.author_name} · {formatDateZh(featured.published_at)}
+              </p>
+            </div>
           </div>
-        </div>
-      </header>
+        </section>
+      )}
 
-      {/* ─── DISPATCHES LIST ────────────────────────────────────────────── */}
-      <section className="bg-sand-50 bg-grain reveal">
-        <div className="max-w-4xl mx-auto px-6 lg:px-8 py-24 md:py-32">
-          <div className="flex flex-wrap items-baseline justify-between gap-y-2 mb-14 md:mb-16 pb-4 border-b border-ocean-200">
-            <h2 className="section-eyebrow text-ocean-900">
-              01 · 全部手记 · ALL DISPATCHES
-            </h2>
-            <span className="mono-label text-ocean-500">
-              {loading
-                ? 'LOADING · 加载中'
-                : `${dispatches.length} ENTRIES · 共 ${dispatches.length} 篇`}
-            </span>
+      {/* ── ARCHIVE — hairline-divided rows on canvas ────────────────── */}
+      {!loading && !error && rest.length > 0 && (
+        <section className="border-t border-line">
+          <div className="max-w-6xl mx-auto px-6 lg:px-10 pt-16 md:pt-20 pb-6">
+            <span className="meta tnum">{rest.length} 篇</span>
           </div>
 
-          {loading ? (
-            <div className="flex items-center justify-center py-24">
-              <Loader2 className="w-6 h-6 animate-spin text-ocean-500" />
-            </div>
-          ) : error ? (
-            <div className="border border-ocean-300 bg-white/60 backdrop-blur-sm p-10 text-center">
-              <AlertCircle className="w-8 h-8 text-[#a24b29] mx-auto mb-4" strokeWidth={1.5} />
-              <p className="display-italic text-2xl text-ocean-950 mb-2">读不到手记。</p>
-              <p className="mono-label text-ocean-600">{error}</p>
-            </div>
-          ) : dispatches.length === 0 ? (
-            <div className="py-24 text-center">
-              <p className="display-italic text-3xl text-ocean-900">还没写出来。</p>
-              <p className="mt-3 mono-label text-ocean-500">DRAFTS IN PROGRESS · 还在写</p>
-            </div>
-          ) : (
-            <div className="space-y-24 md:space-y-32">
-              {dispatches.map((d, i) => (
-                <article key={d.id} className="reveal">
-                  {/* Top byline strip */}
-                  <div className="flex flex-wrap items-baseline justify-between gap-y-2 mb-10 pb-4 border-b border-ocean-200">
-                    <div className="flex items-baseline gap-3 mono-label text-ocean-500">
-                      <span className="text-ocean-400 tabular-nums">
-                        DISPATCH №{String(i + 1).padStart(2, '0')}
-                      </span>
-                      <span aria-hidden className="text-ocean-300">·</span>
-                      <span>{formatDateEn(d.published_at)}</span>
-                    </div>
-                    <div className="mono-label text-sea-700">
-                      BY <span className="text-ocean-950">{d.author_name}</span>
-                    </div>
-                  </div>
+          <div className="max-w-6xl mx-auto px-6 lg:px-10 divide-y divide-line">
+            {rest.map((d) => (
+              <article
+                key={d.id}
+                className="py-10 md:py-12 grid grid-cols-12 gap-y-4 md:gap-x-8"
+              >
+                {/* Left: date in mono */}
+                <div className="col-span-12 md:col-span-2">
+                  <div className="meta tnum text-ink">{formatDateEn(d.published_at)}</div>
+                  <div className="meta mt-1">{formatDateZh(d.published_at)}</div>
+                </div>
 
-                  {/* Title */}
-                  <h3 className="font-heading font-semibold text-ocean-950 leading-[1.05] tracking-tight text-[clamp(2rem,5vw,3.5rem)] mb-6">
+                {/* Center: title in serif */}
+                <div className="col-span-12 md:col-span-8">
+                  <h3
+                    className="font-display text-ink leading-[1.15]"
+                    style={{ fontSize: 'clamp(1.5rem, 2.4vw, 2rem)' }}
+                  >
                     {d.title}
                   </h3>
+                  <p className="font-body text-body text-mute leading-[1.7] mt-4 max-w-prose line-clamp-2 whitespace-pre-line">
+                    {d.body.split(/\n{2,}/)[0]}
+                  </p>
+                </div>
 
-                  {/* Date in Chinese */}
-                  <div className="mono-label-sm text-ocean-500 mb-10">
-                    {formatDate(d.published_at)} · 写于深圳
-                  </div>
-
-                  {/* Hairline */}
-                  <div className="rule-fade w-16 text-ocean-300 mb-10" />
-
-                  {/* Body — preserve the line breaks the author wrote */}
-                  <div className="prose-aquanet">
-                    {d.body.split(/\n{2,}/).map((para, j) => (
-                      <p
-                        key={j}
-                        className={[
-                          'text-ocean-800 leading-[1.95] text-[1.05rem]',
-                          j === 0 ? 'drop-cap' : 'mt-6',
-                          'whitespace-pre-line',
-                        ].join(' ')}
-                      >
-                        {para}
-                      </p>
-                    ))}
-                  </div>
-
-                  {/* Sign-off */}
-                  <div className="mt-12 flex items-center gap-4 mono-label text-ocean-600">
-                    <span className="inline-block w-12 h-px bg-ocean-300" />
-                    <span className="text-ocean-950">{d.author_name}</span>
-                    <span className="text-ocean-300" aria-hidden>·</span>
-                    <span>{formatDate(d.published_at)}</span>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ─── COLOPHON ──────────────────────────────────────────────────── */}
-      <section className="bg-ocean-50 border-t border-ocean-200/80 reveal">
-        <div className="max-w-3xl mx-auto px-6 py-20 md:py-24 text-center">
-          <p className="mono-label text-ocean-700 mb-7">— 后记 · COLOPHON</p>
-          <p className="display-italic text-[clamp(1.4rem,2.8vw,2rem)] text-ocean-900 leading-[1.18] mb-8">
-            写得不快，<br />
-            <span className="text-sea-700">但是真的</span>。
-          </p>
-          <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-3 mono-label text-ocean-700">
-            <Link
-              to="/reports"
-              className="border-b border-ocean-400 pb-1 hover:text-ocean-950 hover:border-ocean-900 transition-colors inline-flex items-center gap-1"
-            >
-              READ THE LETTERS · 公众来信
-              <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={2} />
-            </Link>
-            <span className="text-ocean-300 select-none" aria-hidden>·</span>
-            <Link
-              to="/map"
-              className="border-b border-ocean-400 pb-1 hover:text-ocean-950 hover:border-ocean-900 transition-colors inline-flex items-center gap-1"
-            >
-              SEE THE LIVE MAP · 实时地图
-              <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={2} />
-            </Link>
+                {/* Right: author in mute */}
+                <aside className="col-span-12 md:col-span-2 md:text-right">
+                  <div className="meta">作者</div>
+                  <div className="font-body text-body text-mute mt-2">{d.author_name}</div>
+                </aside>
+              </article>
+            ))}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   )
 }

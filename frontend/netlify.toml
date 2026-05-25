@@ -1,9 +1,14 @@
 [build]
-  command = "npm install && npm run build"
+  # Regenerate package-lock.json on Linux so Vite 8 / Rolldown's
+  # platform-specific native bindings (@rolldown/binding-linux-x64-gnu)
+  # get resolved correctly. The local lockfile is generated on macOS
+  # and doesn't include the Linux binary references.
+  command = "rm -f package-lock.json && npm install --include=optional && npm run build"
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--include=optional"
 
 # Environment variables — set your Aliyun ECS public IP or domain here.
 # The browser calls the API at this URL. Make sure your backend is running and accessible.

@@ -3,7 +3,7 @@
   # platform-specific native bindings (@rolldown/binding-linux-x64-gnu)
   # get resolved correctly. The local lockfile is generated on macOS
   # and doesn't include the Linux binary references.
-  command = "rm -f package-lock.json && npm install --include=optional && npm run build"
+  command = "rm -rf node_modules package-lock.json && npm install --include=optional && npm run build"
   publish = "dist"
 
 [build.environment]

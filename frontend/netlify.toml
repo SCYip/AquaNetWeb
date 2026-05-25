@@ -4,7 +4,7 @@
   # get resolved correctly. The local lockfile is generated on macOS
   # and doesn't include the Linux binary references.
   command = "rm -rf node_modules package-lock.json && npm install --include=optional && npm run build"
-  publish = "dist"
+  publish = "frontend/dist"
 
 [build.environment]
   NODE_VERSION = "22"

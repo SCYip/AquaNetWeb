@@ -7,4 +7,10 @@ export default defineConfig({
   // For Netlify deployment: site is served from root, so base should be "/"
   // If deploying to a subdirectory (e.g. /aquanet/), change this accordingly
   base: '/',
+  // Pre-bundle GSAP + plugins at startup so Vite's dep optimizer doesn't
+  // discover the subpath plugins late (which caused 504 "outdated optimize dep"
+  // reload loops in dev). The plugin subpaths must be listed explicitly.
+  optimizeDeps: {
+    include: ['gsap', 'gsap/ScrollTrigger', 'gsap/SplitText', '@gsap/react'],
+  },
 })

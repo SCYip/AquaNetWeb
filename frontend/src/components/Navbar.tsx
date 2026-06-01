@@ -2,13 +2,21 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
+/* ────────────────────────────────────────────────────────────────────────────
+ * Navbar — AquaNet 水眸 · Instrument Console
+ *
+ * A thin instrument strip. Wordmark left (kinetic hover via variable font),
+ * mono nav labels center, sign-in right. Active route marked with a
+ * signal-orange tick. All auth logic preserved verbatim.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
 const NAV = [
-  { to: '/',           label: '首页'  },
-  { to: '/map',        label: '地图'  },
-  { to: '/about',      label: '关于'  },
-  { to: '/reports',    label: '来信'  },
-  { to: '/dispatches', label: '手记'  },
-  { to: '/contact',    label: '联系'  },
+  { to: '/',           label: '首页',  en: 'HOME' },
+  { to: '/map',        label: '地图',  en: 'MAP' },
+  { to: '/about',      label: '关于',  en: 'ABOUT' },
+  { to: '/reports',    label: '来信',  en: 'LETTERS' },
+  { to: '/dispatches', label: '手记',  en: 'FIELD' },
+  { to: '/contact',    label: '联系',  en: 'CONTACT' },
 ] as const
 
 export const Navbar = () => {
@@ -20,57 +28,78 @@ export const Navbar = () => {
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
 
   return (
-    <header className="sticky top-0 z-50 bg-canvas border-b border-line">
-      <div className="px-6 lg:px-10">
-        <div className="flex items-center justify-between h-16">
-          {/* Wordmark — the only bilingual moment */}
-          <Link to="/" className="font-display text-2xl text-ink leading-none">
-            AquaNet <span className="italic">水眸</span>
+    <header className="sticky top-0 z-50 bg-canvas/90 backdrop-blur-sm border-b border-ink">
+      <div className="px-5 lg:px-8">
+        <div className="flex items-center justify-between h-14">
+          {/* Wordmark — kinetic on hover */}
+          <Link to="/" className="wordmark" aria-label="AquaNet 水眸 — home">
+            <span>AquaNet</span>
+            <span className="zh">水眸</span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8">
-            {NAV.map(link => {
+          {/* Center nav — mono labels */}
+          <nav className="hidden md:flex items-center gap-7">
+            {NAV.map((link) => {
               const active = isActive(link.to)
               return (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className={`text-[0.95rem] transition-colors ${
-                    active ? 'text-ink' : 'text-mute hover:text-ink'
-                  }`}
+                  className="group relative flex items-center gap-1.5 py-1"
+                  aria-current={active ? 'page' : undefined}
                 >
-                  {link.label}
+                  <span
+                    className={`label transition-colors ${
+                      active ? 'text-ink' : 'text-mute group-hover:text-ink'
+                    }`}
+                  >
+                    {link.label}
+                  </span>
+                  <span
+                    className={`block w-1 h-1 rounded-full transition-all ${
+                      active ? 'bg-signal scale-100' : 'bg-transparent scale-0'
+                    }`}
+                    aria-hidden="true"
+                  />
                 </Link>
               )
             })}
           </nav>
 
-          <div className="hidden md:flex items-center gap-5 pl-6 ml-2 border-l border-line">
+          {/* Right cluster */}
+          <div className="hidden md:flex items-center gap-5 pl-5 border-l border-line">
             {isLoggedIn ? (
               <>
-                <Link to="/devices" className={`text-[0.95rem] transition-colors ${isActive('/devices') ? 'text-ink' : 'text-mute hover:text-ink'}`}>
+                <Link
+                  to="/devices"
+                  className={`label transition-colors ${
+                    isActive('/devices') ? 'text-ink' : 'text-mute hover:text-ink'
+                  }`}
+                >
                   我的设备
                 </Link>
-                <span className="text-ink text-[0.95rem]">{user?.name}</span>
+                <span className="label-mute normal-case tracking-normal text-ink">{user?.name}</span>
                 <button
                   onClick={logout}
-                  className="text-mute hover:text-ink transition-colors text-sm"
+                  className="label-mute hover:text-ink transition-colors"
                   aria-label="退出"
                 >
                   退出
                 </button>
               </>
             ) : (
-              <Link to="/login" className="btn py-2 px-5 text-sm">
-                登录
+              <Link to="/login" className="btn py-2 px-4 text-[0.75rem]">
+                登录 · LOG IN
               </Link>
             )}
           </div>
 
+          {/* Mobile toggle */}
           <button
-            className="md:hidden border border-ink px-3 py-1.5 text-sm"
+            className="md:hidden label border border-ink rounded-md px-3 py-1.5"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Menu"
+            aria-expanded={mobileOpen}
           >
             {mobileOpen ? '关闭' : '菜单'}
           </button>
@@ -78,30 +107,47 @@ export const Navbar = () => {
       </div>
 
       {mobileOpen && (
-        <nav className="md:hidden border-t border-line bg-canvas px-6 py-5 space-y-1">
-          {NAV.map(link => (
+        <nav className="md:hidden border-t border-line bg-canvas px-5 py-4">
+          {NAV.map((link) => (
             <Link
               key={link.to}
               to={link.to}
               onClick={() => setMobileOpen(false)}
-              className={`block py-3 border-b border-line text-lg ${isActive(link.to) ? 'text-ink' : 'text-mute'}`}
+              className="flex items-center justify-between py-3 border-b border-line"
             >
-              {link.label}
+              <span className={`text-lg ${isActive(link.to) ? 'text-ink' : 'text-mute'}`}>
+                {link.label}
+              </span>
+              <span className="label-micro">{link.en}</span>
             </Link>
           ))}
           <div className="pt-4">
             {isLoggedIn ? (
               <>
-                <Link to="/devices" onClick={() => setMobileOpen(false)} className="block py-3 text-lg text-ink">
+                <Link
+                  to="/devices"
+                  onClick={() => setMobileOpen(false)}
+                  className="block py-3 text-lg text-ink"
+                >
                   我的设备
                 </Link>
-                <button onClick={() => { logout(); setMobileOpen(false) }} className="text-mute text-sm">
+                <button
+                  onClick={() => {
+                    logout()
+                    setMobileOpen(false)
+                  }}
+                  className="label-mute"
+                >
                   退出
                 </button>
               </>
             ) : (
-              <Link to="/login" onClick={() => setMobileOpen(false)} className="btn w-full">
-                登录
+              <Link
+                to="/login"
+                onClick={() => setMobileOpen(false)}
+                className="btn w-full mt-1"
+              >
+                登录 · LOG IN
               </Link>
             )}
           </div>

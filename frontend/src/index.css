@@ -1,18 +1,44 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;1,9..144,400&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Serif+SC:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Serif+SC:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
 /* ──────────────────────────────────────────────────────────────────────
- * AquaNet 水眸 — minimal globals.
- * Only the bones the system relies on. Components live inline in pages.
+ * AquaNet 水眸 — Instrument Console globals
+ *
+ * The site is the eye of the water. It should read like a precision
+ * instrument — hairlines, monospace numbers, one signal accent — with
+ * just enough atmosphere that the surfaces never feel flat.
  * ────────────────────────────────────────────────────────────────────── */
 
 :root {
-  --canvas: #ffffff;
-  --ink:    #1a1a1a;
+  --canvas: #fafaf7;
+  --ink:    #0a0a0a;
   --mute:   #6e6e73;
   --line:   #d2d2d7;
+  --signal: #ff5a1f;
   --link:   #0a4d8c;
+
+  /* Atmospheric grain — a hair-thin SVG noise we apply on body */
+  --grain-bg: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.04 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* ── Native page transitions — zero JS ────────────────────────────── */
+@view-transition {
+  navigation: auto;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 280ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+::view-transition-old(root) { animation-name: fade-out-down; }
+::view-transition-new(root) { animation-name: fade-in-up; }
+
+@keyframes fade-out-down {
+  to { opacity: 0; transform: translateY(-4px); }
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(6px); }
 }
 
 @layer base {
@@ -21,29 +47,44 @@
   }
 
   html {
-    font-family: 'IBM Plex Serif', 'Noto Serif SC', Georgia, serif;
+    font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+    font-feature-settings: "ss01", "cv01";
     color: var(--ink);
     background: var(--canvas);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-    scroll-behavior: smooth;
+    /* No CSS scroll-behavior: GSAP ScrollSmoother / scrollTo own smooth scrolling. */
   }
 
   body {
-    background: var(--canvas);
+    background:
+      var(--grain-bg),
+      var(--canvas);
+    background-size: 200px 200px, auto;
     color: var(--ink);
     min-height: 100vh;
+    font-size: 1rem;
+    line-height: 1.6;
   }
 
+  /* Display headings use Bricolage Grotesque (variable). */
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Fraunces', 'IBM Plex Serif', Georgia, serif;
-    font-weight: 400;
+    font-family: 'Bricolage Grotesque', 'IBM Plex Mono', ui-monospace, sans-serif;
+    font-weight: 500;
     color: var(--ink);
-    letter-spacing: -0.012em;
+    letter-spacing: -0.022em;
+    font-variation-settings: "wdth" 95, "opsz" 96;
+  }
+
+  /* Chinese characters in headings get the serif treatment — wordmark + titles only */
+  .zh {
+    font-family: 'Noto Serif SC', 'Source Han Serif SC', serif;
+    font-weight: 500;
+    letter-spacing: 0;
   }
 
   ::selection {
-    background: var(--ink);
+    background: var(--signal);
     color: var(--canvas);
   }
 
@@ -61,210 +102,460 @@
 }
 
 /* ──────────────────────────────────────────────────────────────────────
- * Two utility classes only. Anything more lives at the page level.
+ * Utility classes — the instrument vocabulary
  * ────────────────────────────────────────────────────────────────────── */
 @layer components {
 
-  /* Mono metadata label — tracked, defined gray */
-  .meta {
+  /* ── Tracked uppercase mono labels ──────────────────────────────── */
+  .label {
     font-family: 'IBM Plex Mono', ui-monospace, monospace;
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .label-mute {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.6875rem;
     font-weight: 500;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
     color: var(--mute);
     font-variant-numeric: tabular-nums;
   }
 
-  /* Tracked uppercase eyebrow — for section kickers, BLACK ink */
-  .eyebrow {
+  .label-micro {
     font-family: 'IBM Plex Mono', ui-monospace, monospace;
-    font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.16em;
+    font-size: 0.625rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--ink);
+    color: var(--mute);
+    font-variant-numeric: tabular-nums;
   }
 
-  /* Single button style: rectangle, ink on canvas. Hover → link blue. */
+  /* ── Pulsing LIVE dot ───────────────────────────────────────────── */
+  .signal-dot {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    background: var(--signal);
+    border-radius: 9999px;
+    box-shadow: 0 0 0 0 rgba(255, 90, 31, 0.5);
+    animation: signal-pulse 1.6s ease-out infinite;
+  }
+  @keyframes signal-pulse {
+    0%   { box-shadow: 0 0 0 0   rgba(255, 90, 31, 0.55); }
+    70%  { box-shadow: 0 0 0 8px rgba(255, 90, 31, 0); }
+    100% { box-shadow: 0 0 0 0   rgba(255, 90, 31, 0); }
+  }
+
+  /* ── Bento tile ─────────────────────────────────────────────────── */
+  .tile {
+    position: relative;
+    background: var(--canvas);
+    border: 1px solid var(--ink);
+    border-radius: 12px;
+    padding: 1.5rem;
+    overflow: hidden;
+    transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .tile-link { cursor: pointer; }
+  .tile-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 1px 0 var(--ink), 0 6px 24px -8px rgba(10, 10, 10, 0.18);
+  }
+  .tile-ink {
+    background: var(--ink);
+    color: var(--canvas);
+    border-color: var(--ink);
+  }
+  .tile-ink * { color: inherit; }
+  .tile-ink .label-mute { color: rgba(250, 250, 247, 0.55); }
+  .tile-ink .label { color: var(--canvas); }
+
+  /* ── Hairline rules ─────────────────────────────────────────────── */
+  .hairline     { height: 1px; background: var(--line); }
+  .hairline-ink { height: 1px; background: var(--ink); }
+
+  /* ── Buttons ────────────────────────────────────────────────────── */
   .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.95rem 1.6rem;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
     background: var(--ink);
     color: var(--canvas);
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-weight: 500;
-    font-size: 0.9375rem;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     border: 1px solid var(--ink);
-    border-radius: 0;
+    border-radius: 8px;
     cursor: pointer;
-    transition: background 150ms ease;
+    transition: background 200ms ease, color 200ms ease, border-color 200ms ease;
   }
-  .btn:hover, .btn:focus-visible { background: var(--link); border-color: var(--link); }
-
+  .btn:hover, .btn:focus-visible {
+    background: var(--signal);
+    border-color: var(--signal);
+    color: var(--canvas);
+  }
   .btn-outline {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.95rem 1.6rem;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
     background: transparent;
     color: var(--ink);
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-weight: 500;
-    font-size: 0.9375rem;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     border: 1px solid var(--ink);
-    border-radius: 0;
+    border-radius: 8px;
     cursor: pointer;
-    transition: background 150ms ease, color 150ms ease;
+    transition: background 200ms ease, color 200ms ease;
   }
-  .btn-outline:hover, .btn-outline:focus-visible { background: var(--ink); color: var(--canvas); }
+  .btn-outline:hover, .btn-outline:focus-visible {
+    background: var(--ink);
+    color: var(--canvas);
+  }
 
-  /* Bare-underline input */
+  /* ── Bare-underline field ───────────────────────────────────────── */
   .field {
     width: 100%;
-    padding: 0.85rem 0;
+    padding: 0.875rem 0;
     background: transparent;
     border: 0;
     border-bottom: 1px solid var(--line);
     color: var(--ink);
-    font-family: 'IBM Plex Serif', Georgia, serif;
-    font-size: 1.0625rem;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 1rem;
     outline: none;
-    transition: border-color 150ms ease;
+    transition: border-color 180ms ease;
   }
-  .field::placeholder { color: var(--mute); }
-  .field:focus { border-bottom-color: var(--ink); }
-
-  /* ── Editorial primitives — the kind real magazines use ──────────── */
-
-  /* Magazine drop cap. Sits on the first paragraph of body copy.
-     The first letter floats four lines tall, in display serif. */
-  .dropcap::first-letter {
-    font-family: 'Fraunces', Georgia, serif;
-    font-weight: 400;
-    float: left;
-    font-size: 5.5rem;
-    line-height: 0.85;
-    margin: 0.25rem 0.75rem 0 0;
-    color: var(--ink);
-  }
-
-  /* Pull quote — breaks out of the body column with a serif voice,
-     ruled top + bottom with hairlines. */
-  .pullquote {
-    font-family: 'Fraunces', Georgia, serif;
-    font-weight: 400;
-    font-size: clamp(1.5rem, 2.4vw, 2.25rem);
-    line-height: 1.15;
-    letter-spacing: -0.012em;
-    color: var(--ink);
-    border-top: 1px solid var(--ink);
-    border-bottom: 1px solid var(--ink);
-    padding: 1.75rem 0;
-    margin: 2.5rem 0;
-  }
-
-  /* Caption — small italic serif under photographs, with mono credit. */
-  .caption {
-    font-family: 'IBM Plex Serif', Georgia, serif;
-    font-style: italic;
-    font-size: 0.875rem;
-    line-height: 1.45;
+  .field::placeholder {
     color: var(--mute);
-    max-width: 36em;
-  }
-  .caption-credit {
     font-family: 'IBM Plex Mono', ui-monospace, monospace;
-    font-size: 0.6875rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--mute);
-    margin-top: 0.5rem;
-    display: block;
-    font-style: normal;
   }
+  .field:focus { border-bottom-color: var(--signal); }
 
-  /* Issue masthead — small printed chrome that lives at the top edge of
-     a page. Like "AQUANET 水眸 · NO. I · 卷首 · PAGE 03" on a real magazine. */
-  .masthead-strip {
-    font-family: 'IBM Plex Mono', ui-monospace, monospace;
-    font-size: 0.6875rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+  /* ── Boxed field (for instrument-panel forms) ───────────────────── */
+  .field-box {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    background: var(--canvas);
+    border: 1px solid var(--line);
     color: var(--ink);
-    border-bottom: 1px solid var(--ink);
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.9375rem;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 180ms ease, box-shadow 180ms ease;
+  }
+  .field-box::placeholder { color: var(--mute); }
+  .field-box:focus {
+    border-color: var(--ink);
+    box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.06);
   }
 
-  /* Roman numeral section marker — for "I." / "II." / "III." spreads. */
-  .section-numeral {
-    font-family: 'Fraunces', Georgia, serif;
-    font-weight: 400;
-    font-style: italic;
-    font-size: clamp(3.5rem, 6vw, 5.5rem);
-    line-height: 1;
+  /* ── Readout (large monospace numbers) ──────────────────────────── */
+  .readout {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-feature-settings: "tnum", "ss01";
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 0.95;
     letter-spacing: -0.02em;
+  }
+  .readout-xl { font-size: clamp(3rem, 5.5vw, 4.5rem); }
+  .readout-lg { font-size: clamp(2rem, 3.5vw, 3rem); }
+  .readout-md { font-size: 1.75rem; }
+
+  /* ── Kinetic wordmark (subtle on hover) ─────────────────────────── */
+  .wordmark {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 600;
+    font-size: 1.0625rem;
+    letter-spacing: -0.022em;
+    font-variation-settings: "wdth" 95, "opsz" 18;
+    color: var(--ink);
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    transition: font-variation-settings 350ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .wordmark:hover {
+    font-variation-settings: "wdth" 115, "opsz" 36;
+  }
+  .wordmark .zh {
+    font-family: 'Noto Serif SC', 'Source Han Serif SC', serif;
+    font-weight: 500;
+    font-size: 0.95em;
+  }
+
+  /* ── Scan-line overlay (for hero / featured surfaces) ───────────── */
+  .scanlines { position: relative; }
+  .scanlines::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(
+        180deg,
+        transparent 0,
+        transparent 3px,
+        rgba(10, 10, 10, 0.025) 3px,
+        rgba(10, 10, 10, 0.025) 4px
+      );
+    mix-blend-mode: multiply;
+  }
+
+  /* ── Section numerals (large, low-weight) ───────────────────────── */
+  .section-numeral {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 200;
+    font-variation-settings: "wdth" 85, "opsz" 96;
+    font-size: clamp(4rem, 8vw, 7rem);
+    line-height: 1;
+    letter-spacing: -0.04em;
     color: var(--ink);
   }
 
-  /* Body column — real magazine reading rhythm */
+  /* ── Body column ────────────────────────────────────────────────── */
   .article-body {
-    font-family: 'IBM Plex Serif', 'Noto Serif SC', Georgia, serif;
-    font-size: 1.125rem;
-    line-height: 1.75;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 1rem;
+    line-height: 1.7;
     color: var(--ink);
   }
-  .article-body p + p { margin-top: 1.25rem; }
+  .article-body .zh {
+    font-family: 'Noto Serif SC', 'Source Han Serif SC', serif;
+    font-size: 1.0625em;
+    line-height: 1.75;
+  }
+  .article-body p + p { margin-top: 1.1rem; }
+
+  /* ── Scroll-staged reveal — driven by GSAP ScrollTrigger (see MotionProvider).
+   *    .reveal stays visible by default here, so no-JS / reduced-motion users
+   *    always see content; GSAP hides + reveals at runtime only when motion is OK. */
 }
 
 /* ──────────────────────────────────────────────────────────────────────
- * Leaflet — pure black on white, no chrome decoration
+ * Leaflet — instrument-grade map chrome
  * ────────────────────────────────────────────────────────────────────── */
 .leaflet-container {
   width: 100%;
   background: var(--canvas);
-  font-family: 'IBM Plex Serif', Georgia, serif;
+  font-family: 'IBM Plex Mono', monospace;
 }
 .leaflet-container a { color: var(--link) !important; text-decoration: underline; }
 .leaflet-popup-content-wrapper,
 .leaflet-popup-tip {
   background: var(--canvas);
   border: 1px solid var(--ink);
-  border-radius: 0;
+  border-radius: 8px;
   box-shadow: none;
   color: var(--ink);
 }
-.leaflet-popup-content { margin: 12px 16px; font-size: 0.9375rem; }
+.leaflet-popup-content { margin: 12px 16px; font-size: 0.875rem; }
 .leaflet-control-zoom a {
   background: var(--canvas) !important;
   color: var(--ink) !important;
   border-color: var(--ink) !important;
-  border-radius: 0 !important;
+  border-radius: 6px !important;
 }
 .leaflet-control-zoom a:hover { background: var(--ink) !important; color: var(--canvas) !important; }
 .leaflet-control-attribution {
-  background: rgba(255, 255, 255, 0.9) !important;
+  background: rgba(250, 250, 247, 0.92) !important;
   font-family: 'IBM Plex Mono', monospace !important;
   font-size: 0.6875rem !important;
   letter-spacing: 0.04em;
   color: var(--mute) !important;
 }
 
-/* Buoy marker pin — pure black, no halo decoration */
+/* ── Map tooltip (permanent buoy name label) ───────────────────────── */
+.aq-tooltip.leaflet-tooltip {
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: none;
+  padding: 5px 9px;
+  color: var(--canvas);
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.aq-tooltip.leaflet-tooltip::before { display: none; }
+.aq-tooltip__name {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.aq-tooltip__code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.5625rem;
+  letter-spacing: 0.1em;
+  color: rgba(250, 250, 247, 0.55);
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+
+/* ── Map popup (full readings card) ────────────────────────────────── */
+.aq-popup .leaflet-popup-content-wrapper {
+  background: var(--canvas);
+  border: 1px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 0 8px 30px -10px rgba(10, 10, 10, 0.25);
+}
+.aq-popup .leaflet-popup-content { margin: 0; }
+.aq-popup .leaflet-popup-tip {
+  background: var(--canvas);
+  border: 1px solid var(--ink);
+}
+.aq-popup-inner { padding: 16px 18px; }
+.aq-popup__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.aq-popup__kicker {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.aq-popup__code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  color: var(--mute);
+  font-variant-numeric: tabular-nums;
+}
+.aq-popup__name {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 600;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 12px 0 2px;
+}
+.aq-popup__coords {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--mute);
+  font-variant-numeric: tabular-nums;
+}
+.aq-popup__readings {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 16px 0;
+}
+.aq-reading {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.aq-reading--warn {
+  border-color: var(--signal);
+  background: rgba(255, 90, 31, 0.06);
+}
+.aq-reading__label { display: flex; flex-direction: column; line-height: 1; }
+.aq-reading__zh {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 0.6875rem;
+  color: var(--mute);
+}
+.aq-reading__en {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.5rem;
+  letter-spacing: 0.12em;
+  color: var(--mute);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.aq-reading__value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 1.25rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.aq-reading--warn .aq-reading__value { color: var(--signal); }
+.aq-reading__unit { font-size: 0.5em; color: var(--mute); margin-left: 0.15em; }
+.aq-popup__updated {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  color: var(--mute);
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.aq-popup__updated-val { color: var(--ink); font-variant-numeric: tabular-nums; }
+.aq-popup__actions { margin-top: 14px; }
+
+/* Buoy pin — signal-orange when live */
 .aq-pin {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
 }
-.aq-pin__halo { display: none; }
 .aq-pin__dot {
   width: 12px;
   height: 12px;
-  background: var(--ink);
+  background: var(--signal);
   border: 2px solid var(--canvas);
   outline: 1px solid var(--ink);
   border-radius: 50%;
+}
+.aq-pin__halo {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--signal);
+  animation: aq-pin-halo 2s ease-out infinite;
+}
+@keyframes aq-pin-halo {
+  0%   { transform: scale(0.5); opacity: 0.8; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* Reduce motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .signal-dot { animation: none; }
+  .aq-pin__halo { display: none; }
 }

@@ -3,13 +3,13 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 /* ────────────────────────────────────────────────────────────────────────────
- * LoginPage — WIRED-discipline edition.
+ * LoginPage — AquaNet 水眸 · Instrument Console
  *
- * The form IS the page. No photo hero, no veils, no decorative tags.
- * Two channels share the same restrained frame:
+ * The auth terminal. A single panel, two channels:
  *   - EMAIL  → Supabase email+password
  *   - PHONE  → Aliyun Dypnsapi SMS code via Edge Functions
- * Auth logic preserved verbatim.
+ * Every hook, handler, and validation is preserved verbatim — only the
+ * presentation is rebuilt in the instrument vocabulary.
  * ──────────────────────────────────────────────────────────────────────────── */
 
 type Channel = 'email' | 'phone'
@@ -128,187 +128,130 @@ export const LoginPage = () => {
 
   // ─── Render ─────────────────────────────────────────────────────────
   return (
-    <div className="bg-canvas">
-      <section className="max-w-2xl mx-auto px-6 lg:px-10 py-20 md:py-28">
-        {/* Headline — Fraunces, no italic on CJK */}
-        <h1 className="font-display text-display text-ink">
-          登录
+    <div>
+      {/* ── MASTHEAD ─────────────────────────────────────────────────── */}
+      <div className="border-b border-ink">
+        <div className="max-w-6xl mx-auto px-6 lg:px-10 py-2.5 flex items-center justify-between gap-4">
+          <span className="label">登录 · ACCESS</span>
+          <span className="label-mute">观察者终端 · OBSERVER TERMINAL</span>
+        </div>
+      </div>
+
+      <section className="max-w-xl mx-auto px-6 lg:px-10 py-16 md:py-24">
+        <h1 className="text-ink" style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', lineHeight: 0.98, letterSpacing: '-0.03em', fontVariationSettings: '"wdth" 92, "opsz" 96' }}>
+          <span className="zh">登录</span>
         </h1>
 
-        {/* Mode strip — eyebrow left, mute toggle right */}
-        <div className="mt-10 flex items-baseline justify-between border-b border-line pb-4">
-          <span className="eyebrow">
-            {channel === 'phone'
-              ? '短信通道'
-              : mode === 'login'
-              ? '邮箱登录'
-              : '邮箱注册'}
-          </span>
-          {channel === 'email' && (
-            <button
-              type="button"
-              onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); reset() }}
-              className="meta hover:text-ink transition-colors"
-            >
-              {mode === 'login' ? '切换到注册 →' : '← 切换到登录'}
-            </button>
-          )}
-          {channel === 'phone' && codeSent && (
-            <span className="meta">验证码已发送</span>
-          )}
-        </div>
+        {/* Auth panel */}
+        <div className="tile mt-10">
+          {/* Mode strip */}
+          <div className="flex items-baseline justify-between border-b border-line pb-4">
+            <span className="label">
+              {channel === 'phone' ? '短信通道 · SMS' : mode === 'login' ? '邮箱登录 · EMAIL' : '邮箱注册 · SIGN UP'}
+            </span>
+            {channel === 'email' && (
+              <button
+                type="button"
+                onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); reset() }}
+                className="label-mute hover:text-ink transition-colors"
+              >
+                {mode === 'login' ? '切换到注册 →' : '← 切换到登录'}
+              </button>
+            )}
+            {channel === 'phone' && codeSent && <span className="label-mute">已发送</span>}
+          </div>
 
-        {/* Channel tabs — plain text with ink underline on active */}
-        <div className="mt-8 flex gap-8">
-          <ChannelTab
-            active={channel === 'email'}
-            onClick={() => switchChannel('email')}
-            label="EMAIL"
-          />
-          <ChannelTab
-            active={channel === 'phone'}
-            onClick={() => switchChannel('phone')}
-            label="PHONE"
-          />
-        </div>
+          {/* Channel tabs */}
+          <div className="mt-6 flex gap-2">
+            <ChannelTab active={channel === 'email'} onClick={() => switchChannel('email')} label="EMAIL" />
+            <ChannelTab active={channel === 'phone'} onClick={() => switchChannel('phone')} label="PHONE" />
+          </div>
 
-        {/* Form body */}
-        <div className="mt-12">
-          {channel === 'email' ? (
-            <form onSubmit={onEmailSubmit} className="space-y-8">
-              <AlertBox error={error} info={info} />
+          {/* Form body */}
+          <div className="mt-9">
+            {channel === 'email' ? (
+              <form onSubmit={onEmailSubmit} className="space-y-6">
+                <AlertBox error={error} info={info} />
 
-              {mode === 'register' && (
-                <Field id="name" label="姓名">
-                  <input
-                    id="name"
-                    type="text"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    placeholder="陈水眸"
-                    autoComplete="name"
-                    disabled={submitting}
-                    aria-label="姓名"
-                    className="field"
-                  />
+                {mode === 'register' && (
+                  <Field id="name" label="姓名 · NAME">
+                    <input id="name" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="陈水眸" autoComplete="name" disabled={submitting} aria-label="姓名" className="field-box" />
+                  </Field>
+                )}
+
+                <Field id="email" label="邮箱 · EMAIL">
+                  <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required disabled={submitting} aria-label="邮箱" className="field-box" />
                 </Field>
-              )}
 
-              <Field id="email" label="邮箱">
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  required
-                  disabled={submitting}
-                  aria-label="邮箱"
-                  className="field"
-                />
-              </Field>
+                <Field id="password" label="密码 · PASSWORD">
+                  <input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required minLength={6} disabled={submitting} aria-label="密码" className="field-box" />
+                </Field>
 
-              <Field id="password" label="密码">
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                  required
-                  minLength={6}
-                  disabled={submitting}
-                  aria-label="密码"
-                  className="field"
-                />
-              </Field>
+                <SubmitButton submitting={submitting}>
+                  {mode === 'login' ? '登录 · LOG IN' : '创建账号 · CREATE'}
+                </SubmitButton>
+              </form>
+            ) : (
+              <form onSubmit={onPhoneSubmit} className="space-y-6">
+                <AlertBox error={error} info={info} />
 
-              <SubmitButton submitting={submitting}>
-                {mode === 'login' ? '登录' : '创建账号'}
-              </SubmitButton>
-            </form>
-          ) : (
-            <form onSubmit={onPhoneSubmit} className="space-y-8">
-              <AlertBox error={error} info={info} />
+                <Field id="phone" label="手机号 · PHONE">
+                  <div className="flex items-stretch gap-3">
+                    <input
+                      id="phone"
+                      type="tel"
+                      value={phone}
+                      onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                      placeholder="13800000000"
+                      autoComplete="tel"
+                      inputMode="numeric"
+                      pattern="1[3-9]\d{9}"
+                      required
+                      disabled={submitting}
+                      aria-label="手机号"
+                      className="field-box flex-1 tnum"
+                    />
+                    <button
+                      type="button"
+                      onClick={onSendCode}
+                      disabled={sendingCode || cooldown > 0 || !MAINLAND_PHONE_RE.test(phone)}
+                      className="btn-outline whitespace-nowrap text-[0.7rem] px-4 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {sendingCode ? '发送中…' : cooldown > 0 ? `${cooldown}s` : codeSent ? '重发' : '发送验证码'}
+                    </button>
+                  </div>
+                </Field>
 
-              <Field id="phone" label="手机号">
-                <div className="flex items-end gap-4">
+                <Field id="code" label="验证码 · CODE">
                   <input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                    placeholder="13800000000"
-                    autoComplete="tel"
+                    id="code"
+                    type="text"
+                    value={code}
+                    onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                    placeholder="••••••"
                     inputMode="numeric"
-                    pattern="1[3-9]\d{9}"
+                    autoComplete="one-time-code"
                     required
                     disabled={submitting}
-                    aria-label="手机号"
-                    className="field flex-1 tnum"
+                    aria-label="验证码"
+                    className="field-box tnum text-2xl tracking-[0.5em] text-center"
                   />
-                  <button
-                    type="button"
-                    onClick={onSendCode}
-                    disabled={sendingCode || cooldown > 0 || !MAINLAND_PHONE_RE.test(phone)}
-                    className="meta hover:text-ink transition-colors whitespace-nowrap pb-3 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {sendingCode
-                      ? '发送中…'
-                      : cooldown > 0
-                      ? `${cooldown}s 后重发`
-                      : codeSent
-                      ? '重新发送'
-                      : '发送验证码'}
-                  </button>
-                </div>
-              </Field>
+                </Field>
 
-              <Field id="code" label="验证码">
-                <input
-                  id="code"
-                  type="text"
-                  value={code}
-                  onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                  placeholder="••••••"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  required
-                  disabled={submitting}
-                  aria-label="验证码"
-                  className="field tnum font-meta text-2xl tracking-[0.5em] text-center"
-                />
-              </Field>
+                <Field id="phone-name" label="姓名（选填）· NAME">
+                  <input id="phone-name" type="text" value={phoneName} onChange={e => setPhoneName(e.target.value)} placeholder="可以留空" autoComplete="name" disabled={submitting} aria-label="姓名（选填）" className="field-box" />
+                </Field>
 
-              <Field id="phone-name" label="姓名（选填）">
-                <input
-                  id="phone-name"
-                  type="text"
-                  value={phoneName}
-                  onChange={e => setPhoneName(e.target.value)}
-                  placeholder="可以留空"
-                  autoComplete="name"
-                  disabled={submitting}
-                  aria-label="姓名（选填）"
-                  className="field"
-                />
-              </Field>
-
-              <SubmitButton submitting={submitting}>
-                登录
-              </SubmitButton>
-            </form>
-          )}
+                <SubmitButton submitting={submitting}>登录 · LOG IN</SubmitButton>
+              </form>
+            )}
+          </div>
         </div>
 
-        {/* Footer — quiet help link */}
-        <p className="mt-16 pt-6 border-t border-line flex items-baseline justify-between">
-          <span className="meta">收不到短信？账号有问题？</span>
-          <Link to="/contact" className="meta hover:text-ink transition-colors">
-            写信给我们 ↗
-          </Link>
+        {/* Footer help */}
+        <p className="mt-8 flex items-baseline justify-between">
+          <span className="label-mute normal-case" style={{ letterSpacing: '0.04em' }}>收不到短信？账号有问题？</span>
+          <Link to="/contact" className="label hover:text-signal transition-colors">写信给我们 ↗</Link>
         </p>
       </section>
     </div>
@@ -317,34 +260,27 @@ export const LoginPage = () => {
 
 /* ── Subcomponents ─────────────────────────────────────────────────── */
 
-function ChannelTab({ active, onClick, label }: {
-  active: boolean
-  onClick: () => void
-  label: string
-}) {
+function ChannelTab({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`pb-3 border-b-2 transition-colors ${
+      className="label rounded-md px-4 py-2 border transition-colors"
+      style={
         active
-          ? 'border-ink text-ink'
-          : 'border-transparent text-mute hover:text-ink'
-      }`}
+          ? { background: 'var(--ink)', color: 'var(--canvas)', borderColor: 'var(--ink)' }
+          : { background: 'transparent', color: 'var(--mute)', borderColor: 'var(--line)' }
+      }
     >
-      <span className="eyebrow">{label}</span>
+      {label}
     </button>
   )
 }
 
-function Field({ id, label, children }: {
-  id: string
-  label: string
-  children: React.ReactNode
-}) {
+function Field({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="meta block">
+      <label htmlFor={id} className="label-micro block">
         {label}
       </label>
       {children}
@@ -358,27 +294,21 @@ function AlertBox({ error, info }: { error: string | null; info: string | null }
   return (
     <div
       role={isError ? 'alert' : 'status'}
-      className={
+      className="rounded-md p-4 border"
+      style={
         isError
-          ? 'border border-link bg-link/5 text-ink p-4'
-          : 'border border-line bg-canvas text-ink p-4'
+          ? { borderColor: 'var(--signal)', background: 'rgba(255,90,31,0.06)' }
+          : { borderColor: 'var(--line)', background: 'transparent' }
       }
     >
-      <div className="text-body leading-snug">{error ?? info}</div>
+      <div className="article-body text-small leading-snug">{error ?? info}</div>
     </div>
   )
 }
 
-function SubmitButton({ submitting, children }: {
-  submitting: boolean
-  children: React.ReactNode
-}) {
+function SubmitButton({ submitting, children }: { submitting: boolean; children: React.ReactNode }) {
   return (
-    <button
-      type="submit"
-      disabled={submitting}
-      className="btn w-full disabled:opacity-40 disabled:cursor-not-allowed"
-    >
+    <button type="submit" disabled={submitting} className="btn w-full disabled:opacity-40 disabled:cursor-not-allowed">
       {submitting ? '处理中…' : children}
     </button>
   )

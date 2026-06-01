@@ -4,15 +4,15 @@ import L from 'leaflet'
 import type { BuoyRow } from '../lib/types'
 import { getDeployedBuoys } from '../services/buoyService'
 import { ExportButton } from '../components/ExportButton'
+import '../lib/smoothWheelZoom'
 
 /* ────────────────────────────────────────────────────────────────────────────
- * MapPage — AquaNet 水眸 · Live Map
+ * MapPage — AquaNet 水眸 · Live Map · Instrument Console
  *
- * WIRED-discipline edition. A full-bleed ocean photo opens the page, three
- * clean stats announce the fleet on canvas, a full-bleed Leaflet map sits
- * between hairlines, and a simple three-cell legend explains how to read the
- * marks. All Leaflet behaviour — buoy fetch, marker rendering, popup content,
- * auto-fit bounds, 30s refresh — is preserved verbatim.
+ * Typographic masthead + console readouts (online / polling / last sync), a
+ * full-bleed Leaflet map between hairlines, and a three-tile legend. ALL
+ * Leaflet behaviour — buoy fetch, marker rendering, popup content, auto-fit
+ * bounds, 30s refresh — is preserved verbatim.
  * ──────────────────────────────────────────────────────────────────────────── */
 
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl
@@ -21,8 +21,6 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 })
-
-const HERO_IMG = 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=2400&q=80&auto=format&fit=crop'
 
 const SHENZHEN_CENTER: L.LatLngExpression = [22.5431, 114.0579]
 
@@ -108,15 +106,25 @@ export const MapPage = () => {
     ? lastSync.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     : '--:--:--'
 
+  const Masthead = () => (
+    <div className="border-b border-ink">
+      <div className="max-w-6xl mx-auto px-6 lg:px-10 py-2.5 flex items-center justify-between gap-4">
+        <span className="label">实时地图 · LIVE MAP</span>
+        <span className="label-mute tnum flex items-center gap-2">
+          <span className="signal-dot" aria-hidden="true" />
+          SYNC · {lastSyncTime}
+        </span>
+      </div>
+    </div>
+  )
+
   /* ── Loading ───────────────────────────────────────────────────────── */
   if (isLoading) {
     return (
       <div>
-        <figure className="relative">
-          <img src={HERO_IMG} alt="" className="w-full h-[55vh] object-cover" loading="eager" />
-        </figure>
-        <section className="max-w-5xl mx-auto px-6 lg:px-10 py-20">
-          <p className="meta">正在接通海上节点。</p>
+        <Masthead />
+        <section className="max-w-5xl mx-auto px-6 lg:px-10 py-24">
+          <p className="label-mute">正在接通海上节点 · CONNECTING</p>
         </section>
       </div>
     )
@@ -126,13 +134,14 @@ export const MapPage = () => {
   if (error) {
     return (
       <div>
-        <figure className="relative">
-          <img src={HERO_IMG} alt="" className="w-full h-[55vh] object-cover" loading="eager" />
-        </figure>
+        <Masthead />
         <section className="max-w-5xl mx-auto px-6 lg:px-10 py-20">
-          <h1 className="font-display text-display text-ink">连不上水里。</h1>
-          <p className="font-body text-body text-mute mt-6 max-w-xl">{error}</p>
-          <button onClick={load} className="btn mt-8">再试一次</button>
+          <h1 className="text-ink" style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.75rem)' }}><span className="zh">连不上水里。</span></h1>
+          <div className="tile mt-6 max-w-xl">
+            <div className="label mb-2" style={{ color: 'var(--signal)' }}>错误 · ERROR</div>
+            <p className="article-body text-small">{error}</p>
+          </div>
+          <button onClick={load} className="btn mt-8">再试一次 · RETRY</button>
         </section>
       </div>
     )
@@ -141,63 +150,39 @@ export const MapPage = () => {
   /* ── Loaded ────────────────────────────────────────────────────────── */
   return (
     <div>
-      {/* ── HERO: full-bleed photo, no veil ──────────────────────────── */}
-      <figure className="relative">
-        <img
-          src={HERO_IMG}
-          alt=""
-          className="w-full h-[55vh] object-cover"
-          loading="eager"
-        />
-      </figure>
+      <Masthead />
 
-      {/* ── HEADLINE + STATS ─────────────────────────────────────────── */}
-      <section className="max-w-6xl mx-auto px-6 lg:px-10 pt-16 md:pt-24 pb-16 md:pb-20">
-        <h1 className="font-display text-hero text-ink max-w-4xl">
-          今天，水里的浮标正在说话。
+      {/* ── HERO + CONSOLE READOUTS ──────────────────────────────────── */}
+      <section className="scanlines max-w-6xl mx-auto px-6 lg:px-10 pt-16 md:pt-24 pb-12 md:pb-16">
+        <h1 className="text-ink max-w-4xl" style={{ fontSize: 'clamp(2.5rem, 6.5vw, 5rem)', lineHeight: 0.98, letterSpacing: '-0.03em', fontVariationSettings: '"wdth" 92, "opsz" 96' }}>
+          <span className="zh">水里的浮标，正在说话。</span>
         </h1>
-        <p className="font-body text-lede text-ink mt-8 max-w-2xl">
-          一队浮标，每三十秒同步一次。点任意一个，看它当下的水温、酸碱度与浊度。
+        <p className="article-body mt-8 max-w-2xl" style={{ fontSize: '1.1875rem' }}>
+          <span className="zh">浮标每五分钟把读数发上来。点任意一个，看它当下的水温、酸碱度与浊度。</span>
         </p>
 
-        <div className="mt-14 pt-10 border-t border-line grid grid-cols-1 md:grid-cols-3 md:divide-x divide-line">
-          <div className="md:pr-10">
-            <div className="meta">Online</div>
-            <div className="font-display text-ink leading-none tnum mt-4" style={{ fontSize: 'clamp(2.5rem, 5vw, 4.5rem)' }}>
-              {String(buoys.length).padStart(2, '0')}
-            </div>
-            <div className="font-body text-body text-mute mt-4">在线浮标</div>
+        <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+          <div className="tile">
+            <div className="label-mute">在线浮标 · ONLINE</div>
+            <div className="readout readout-lg tnum mt-3">{String(buoys.length).padStart(2, '0')}</div>
           </div>
-          <div className="mt-10 md:mt-0 pt-10 md:pt-0 border-t md:border-t-0 border-line md:px-10">
-            <div className="meta">Polling</div>
-            <div className="font-display text-ink leading-none tnum mt-4" style={{ fontSize: 'clamp(2.5rem, 5vw, 4.5rem)' }}>
-              30<span className="font-body text-lede text-mute ml-2">s</span>
-            </div>
-            <div className="font-body text-body text-mute mt-4">每三十秒拉一次</div>
+          <div className="tile">
+            <div className="label-mute">读数间隔 · READING</div>
+            <div className="readout readout-lg tnum mt-3">5<span style={{ fontSize: '0.35em', marginLeft: '0.1em', color: 'var(--mute)' }}>MIN</span></div>
           </div>
-          <div className="mt-10 md:mt-0 pt-10 md:pt-0 border-t md:border-t-0 border-line md:pl-10">
-            <div className="meta flex items-center gap-2">
-              Last sync
-              <span
-                aria-hidden
-                className="inline-block w-1.5 h-1.5 rounded-full bg-link"
-                title="live"
-              />
-            </div>
-            <div className="font-display text-ink leading-none tnum mt-4" style={{ fontSize: 'clamp(2.5rem, 5vw, 4.5rem)' }}>
-              {lastSyncTime}
-            </div>
-            <div className="font-body text-body text-mute mt-4">最近一次同步</div>
+          <div className="tile">
+            <div className="label-mute flex items-center gap-2">最近同步 · LAST SYNC <span className="signal-dot" aria-hidden="true" /></div>
+            <div className="readout readout-md tnum mt-3">{lastSyncTime}</div>
           </div>
         </div>
 
-        <div className="mt-10">
+        <div className="mt-8">
           <ExportButton variant="fleet" />
         </div>
       </section>
 
       {/* ── FULL-BLEED MAP between hairlines ─────────────────────────── */}
-      <section className="border-y border-line">
+      <section className="border-y border-ink">
         <MapContainer
           center={SHENZHEN_CENTER}
           zoom={11}
@@ -207,9 +192,7 @@ export const MapPage = () => {
           zoomDelta={0.5}
           className="h-[68vh] min-h-[480px] w-full"
           zoomControl
-          scrollWheelZoom
-          wheelDebounceTime={20}
-          wheelPxPerZoomLevel={80}
+          scrollWheelZoom={false}
           dragging
           inertia
           doubleClickZoom
@@ -238,7 +221,7 @@ export const MapPage = () => {
                 <Popup className="aq-popup" maxWidth={360} minWidth={320}>
                   <div className="aq-popup-inner">
                     <div className="aq-popup__head">
-                      <span className="aq-popup__kicker">浮标</span>
+                      <span className="aq-popup__kicker">浮标 · BUOY</span>
                       <span className="aq-popup__code">
                         {b.code || b.id.slice(0, 8)}
                       </span>
@@ -250,17 +233,8 @@ export const MapPage = () => {
                     </p>
 
                     <dl className="aq-popup__readings">
-                      <Reading
-                        label="水温"
-                        sub="TEMP"
-                        value={fmt(b.temp, 1)}
-                        unit="°C"
-                      />
-                      <Reading
-                        label="酸碱度"
-                        sub="PH"
-                        value={fmt(b.ph, 2)}
-                      />
+                      <Reading label="水温" sub="TEMP" value={fmt(b.temp, 1)} unit="°C" />
+                      <Reading label="酸碱度" sub="PH" value={fmt(b.ph, 2)} />
                       <Reading
                         label="浊度"
                         sub="TURB"
@@ -272,18 +246,11 @@ export const MapPage = () => {
 
                     <div className="aq-popup__updated">
                       <span>上次更新</span>
-                      <span className="aq-popup__updated-val">
-                        {formatRelative(b.updated_at)}
-                      </span>
+                      <span className="aq-popup__updated-val">{formatRelative(b.updated_at)}</span>
                     </div>
 
                     <div className="aq-popup__actions">
-                      <ExportButton
-                        variant="single"
-                        buoy={b}
-                        size="sm"
-                        className="w-full justify-center"
-                      />
+                      <ExportButton variant="single" buoy={b} size="sm" className="w-full justify-center" />
                     </div>
                   </div>
                 </Popup>
@@ -293,49 +260,43 @@ export const MapPage = () => {
         </MapContainer>
       </section>
 
-      {/* ── LEGEND: three-cell explainer on canvas ───────────────────── */}
-      <section className="border-b border-line">
-        <div className="max-w-6xl mx-auto px-6 lg:px-10 py-20 md:py-24 grid grid-cols-1 md:grid-cols-3 md:divide-x divide-line">
-          <div className="md:pr-10">
+      {/* ── LEGEND: three tiles ──────────────────────────────────────── */}
+      <section className="border-b border-ink">
+        <div className="max-w-6xl mx-auto px-6 lg:px-10 py-16 md:py-20 grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+          <div className="tile">
             <div className="flex items-center gap-3">
               <span className="aq-pin" style={{ width: 22, height: 22 }}>
                 <span className="aq-pin__halo" />
                 <span className="aq-pin__dot" />
               </span>
-              <div className="meta">每一个点</div>
+              <span className="label">每一个点 · EACH DOT</span>
             </div>
-            <h3 className="font-display text-subhead text-ink mt-5">一个真实的传感器</h3>
-            <p className="font-body text-body text-mute mt-4">
-              每个圆点是一只浮标，就在水里漂着。点击它，看到水温、酸碱度和浊度——它现在告诉我们的话。
+            <h3 className="text-ink mt-5" style={{ fontSize: '1.375rem' }}><span className="zh">一个真实的传感器</span></h3>
+            <p className="article-body text-small mt-4" style={{ color: 'var(--mute)' }}>
+              <span className="zh">每个圆点是一只浮标，就在水里漂着。点击它，看到水温、酸碱度和浊度——它现在告诉我们的话。</span>
             </p>
           </div>
 
-          <div className="mt-10 md:mt-0 pt-10 md:pt-0 border-t md:border-t-0 border-line md:px-10">
-            <div className="meta">同步频率</div>
-            <h3 className="font-display text-subhead text-ink mt-5">
-              每 <span className="tnum">30</span> 秒
-            </h3>
-            <p className="font-body text-body text-mute mt-4">
-              数据每三十秒自动同步一次。右上角的下载按钮可以把整队浮标当下的状态打包成 CSV。
+          <div className="tile">
+            <div className="label">读数频率 · CADENCE</div>
+            <h3 className="text-ink mt-5" style={{ fontSize: '1.375rem' }}><span className="zh">每 </span><span className="tnum">5</span><span className="zh"> 分钟</span></h3>
+            <p className="article-body text-small mt-4" style={{ color: 'var(--mute)' }}>
+              <span className="zh">浮标每五分钟把一组新读数发上来。上方的下载按钮可以把所有浮标当下的状态打包成 CSV。</span>
             </p>
           </div>
 
-          <div className="mt-10 md:mt-0 pt-10 md:pt-0 border-t md:border-t-0 border-line md:pl-10">
-            <div className="meta">阈值</div>
-            <h3 className="font-display text-subhead text-ink mt-5">
-              浊度 &gt; <span className="tnum">15</span> NTU
-            </h3>
-            <p className="font-body text-body text-mute mt-4">
-              超过阈值的读数会被特别标出，提醒你这一处值得多看一眼。其他指标暂以原始数值呈现。
+          <div className="tile">
+            <div className="label" style={{ color: 'var(--signal)' }}>阈值 · THRESHOLD</div>
+            <h3 className="text-ink mt-5" style={{ fontSize: '1.375rem' }}><span className="zh">浊度 </span>&gt; <span className="tnum">15</span> NTU</h3>
+            <p className="article-body text-small mt-4" style={{ color: 'var(--mute)' }}>
+              <span className="zh">超过阈值的读数会被特别标出，提醒你这一处值得多看一眼。其他指标暂以原始数值呈现。</span>
             </p>
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto px-6 lg:px-10 py-6 border-t border-line flex flex-wrap items-center justify-between gap-3">
-          <span className="meta tnum">Last refresh · {lastSyncTime}</span>
-          <button type="button" onClick={load} className="btn-outline" aria-label="刷新地图数据">
-            刷新
-          </button>
+        <div className="max-w-6xl mx-auto px-6 lg:px-10 py-5 border-t border-line flex flex-wrap items-center justify-between gap-3">
+          <span className="label-mute tnum">LAST REFRESH · {lastSyncTime}</span>
+          <button type="button" onClick={load} className="btn-outline" aria-label="刷新地图数据">刷新 · REFRESH</button>
         </div>
       </section>
     </div>

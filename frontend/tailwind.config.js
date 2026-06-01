@@ -1,13 +1,13 @@
 /** @type {import('tailwindcss').Config}
  *
- * AquaNet 水眸 — Design tokens
+ * AquaNet 水眸 — Instrument Console design tokens
  *
- * Hard rules (modelled after WIRED + Apple):
- *   - Only 4 colours.
- *   - Display = Fraunces 400. Body = IBM Plex Serif. Meta = IBM Plex Mono.
- *   - Italics only on Latin words.
- *   - Border-radius is 0 or 9999, never in between.
- *   - No shadows. No gradient veils. No opacity-based "secondary" text.
+ * Hard rules:
+ *   - Display = Bricolage Grotesque (variable). Body & meta = IBM Plex Mono. CJK = Noto Serif SC.
+ *   - Bone canvas, not pure white. Ink is warm-near-black.
+ *   - One signal accent (orange) — used only for LIVE state and primary CTAs.
+ *   - Corner radius: 0, 4, 8, 12, or 9999. Never in between.
+ *   - No gratuitous shadows. Use 1px hairlines for separation.
  */
 export default {
   content: [
@@ -17,30 +17,54 @@ export default {
   theme: {
     extend: {
       colors: {
-        canvas: '#ffffff',   // page background
-        ink:    '#1a1a1a',   // primary text + buttons + footer band
-        mute:   '#6e6e73',   // secondary text — defined gray, not opacity
+        canvas: '#fafaf7',   // bone — slight warmth, not pure white
+        ink:    '#0a0a0a',   // warm near-black
+        mute:   '#6e6e73',   // defined gray
         line:   '#d2d2d7',   // hairlines
-        link:   '#0a4d8c',   // single accent — links, focus rings, the rare CTA highlight
+        signal: '#ff5a1f',   // the one accent — LIVE state, primary CTAs
+        link:   '#0a4d8c',   // text links + focus rings
       },
       fontFamily: {
-        display: ['Fraunces', '"IBM Plex Serif"', 'Georgia', 'serif'],
-        body:    ['"IBM Plex Serif"', '"Source Han Serif SC"', '"Noto Serif SC"', 'Georgia', 'serif'],
-        meta:    ['"IBM Plex Mono"', 'ui-monospace', 'Menlo', 'monospace'],
+        display: ['"Bricolage Grotesque"', '"IBM Plex Mono"', 'ui-monospace', 'sans-serif'],
+        mono:    ['"IBM Plex Mono"', 'ui-monospace', 'Menlo', 'monospace'],
+        zh:      ['"Noto Serif SC"', '"Source Han Serif SC"', 'Georgia', 'serif'],
       },
       fontSize: {
-        // Tight, magazine-scaled type system
-        'hero':    ['clamp(2.75rem, 6.5vw, 5.5rem)', { lineHeight: '1.02', letterSpacing: '-0.018em' }],
-        'display': ['clamp(2rem, 4vw, 3.25rem)',     { lineHeight: '1.08', letterSpacing: '-0.012em' }],
-        'subhead': ['1.5rem',                         { lineHeight: '1.2',  letterSpacing: '-0.01em' }],
-        'lede':    ['1.25rem',                        { lineHeight: '1.55' }],
-        'body':    ['1.0625rem',                      { lineHeight: '1.55' }],
-        'small':   ['0.9375rem',                      { lineHeight: '1.5' }],
-        'meta':    ['0.75rem',                        { lineHeight: '1.3', letterSpacing: '0.06em' }],
+        // Instrument-scaled type
+        'hero':    ['clamp(3rem, 7.5vw, 6.5rem)',  { lineHeight: '0.96', letterSpacing: '-0.025em' }],
+        'display': ['clamp(2rem, 4.5vw, 3.75rem)', { lineHeight: '1.02', letterSpacing: '-0.018em' }],
+        'subhead': ['clamp(1.25rem, 2vw, 1.625rem)', { lineHeight: '1.18', letterSpacing: '-0.01em' }],
+        'lede':    ['1.1875rem',                   { lineHeight: '1.6' }],
+        'body':    ['1rem',                        { lineHeight: '1.6' }],
+        'small':   ['0.875rem',                    { lineHeight: '1.5' }],
+        'meta':    ['0.6875rem',                   { lineHeight: '1.3', letterSpacing: '0.1em' }],
+        'micro':   ['0.625rem',                    { lineHeight: '1.3', letterSpacing: '0.14em' }],
       },
       borderRadius: {
         none: '0px',
+        sm:   '4px',
+        md:   '8px',
+        lg:   '12px',
         full: '9999px',
+      },
+      letterSpacing: {
+        'tightest': '-0.025em',
+        'wider-mono': '0.1em',
+        'widest-mono': '0.16em',
+      },
+      animation: {
+        'pulse-signal': 'pulse-signal 1.6s ease-in-out infinite',
+        'tick-in': 'tick-in 800ms cubic-bezier(0.16, 1, 0.3, 1) both',
+      },
+      keyframes: {
+        'pulse-signal': {
+          '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+          '50%':      { opacity: '0.4', transform: 'scale(0.85)' },
+        },
+        'tick-in': {
+          '0%':   { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
     },
   },
